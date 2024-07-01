@@ -9,6 +9,7 @@ Welcome to Python Boilerplate's documentation!
    usage
    code/modules
    changes
+   related_work
 
 Indices and tables
 ==================

@@ -11,7 +11,8 @@ with open('CHANGES.rst', encoding='utf-8') as history_file:
     changes = history_file.read()
 
 REQUIREMENTS = [
-    'numpy',
+    'pytest',
+    'mpi4py',
     # add additional project dependencies here
 ]
 
@@ -21,7 +22,6 @@ DEV_REQUIREMENTS = [
     'sphinx-rtd-theme<2',
     'docutils<0.19',
     'pylint',
-    'pytest',
     'pytest-cov',
     'wheel',
     # add additional development dependencies here

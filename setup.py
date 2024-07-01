@@ -16,7 +16,7 @@ REQUIREMENTS = [
     # add additional project dependencies here
 ]
 
-DEV_REQUIREMENTS = [
+DEV_REQUIREMENTS = REQUIREMENTS + [
     'check-manifest',
     'Sphinx<7',
     'sphinx-rtd-theme<2',
@@ -24,6 +24,7 @@ DEV_REQUIREMENTS = [
     'pylint',
     'pytest-cov',
     'wheel',
+    'numpy'
     # add additional development dependencies here
 ]
 

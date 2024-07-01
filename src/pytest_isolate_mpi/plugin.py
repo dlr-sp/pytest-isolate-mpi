@@ -23,6 +23,8 @@ WITH_MPI_ARG = "--with-mpi"
 ONLY_MPI_ARG = "--only-mpi"
 FORKED_MPI_ARG = "--forked-mpi"
 VERBOSE_MPI_ARG = "--verbose-mpi"
+IS_FORKED_MPI_ARG = "--is-forked-by-main-pytest"
+
 
 # list of env variables copied from HPX
 MPI_ENV_HINTS = [
@@ -149,10 +151,11 @@ class MPIPlugin(object):
         Hook setting config object (always called at least once)
         """
         self._is_testing_mpi = self._testing_mpi(config)
-        self._forked_mpi = config.getoption(FORKED_MPI_ARG)
+        # self._forked_mpi = config.getoption(FORKED_MPI_ARG)
+        self._is_forked_mpi_environment = config.getoption(IS_FORKED_MPI_ARG)
         self._verbose_mpi_info = config.getoption(VERBOSE_MPI_ARG)
 
-        if self._is_testing_mpi and self._forked_mpi:
+        if self._is_testing_mpi and not self._is_forked_mpi_environment:
             for env in MPI_ENV_HINTS:
                 if os.getenv(env):
                     pytest.exit(
@@ -272,13 +275,17 @@ class MPIPlugin(object):
                 if mark.args:
                     raise ValueError("mpi mark does not take positional args")
 
-                if self._forked_mpi:
+                # in our outer pytest run, we do not need to do any further checks
+                if not self._is_forked_mpi_environment:
                     continue
 
+                # check whether we have the correct number of cores
                 try:
                     from mpi4py import MPI
                 except ImportError:
                     pytest.fail("MPI tests require that mpi4py be installed")
+
+                # TODO: remove this?
 
                 comm = MPI.COMM_WORLD
                 min_size = mark.kwargs.get('min_size')
@@ -307,10 +314,10 @@ class MPIPlugin(object):
         ihook.pytest_runtest_logstart(
             nodeid=item.nodeid, location=item.location)
 
-        if self._forked_mpi:
-            reports = self.mpi_runtestprotocol(item)
-        else:
+        if self._is_forked_mpi_environment:
             reports = runner.runtestprotocol(item, log=False)
+        else:
+            reports = self.mpi_runtestprotocol(item)
 
         for rep in reports:
             ihook.pytest_runtest_logreport(report=rep)
@@ -328,10 +335,10 @@ class MPIPlugin(object):
 
         cmd = [
             self._mpirun_exe, "-n", str(mpi_ranks),
-            sys.executable, "-m", "pytest", "--debug",
+            sys.executable, "-m", "pytest", "--debug", IS_FORKED_MPI_ARG,
             # "--no-header",
             "--with-mpi",
-            item.nodeid.rstrip('[0123456789]'),
+            item.nodeid  #.rstrip('[0123456789]'),
         ]
 
         print("dispatching command:", cmd)
@@ -482,8 +489,8 @@ def pytest_addoption(parser):
         help="Run *only* MPI tests, this should be paired with mpirun."
     )
     group.addoption(
-        FORKED_MPI_ARG, action="store_true", default=False,
-        help="Execute mpirun from a subprocess, must not be paired with mpirun."
+        IS_FORKED_MPI_ARG, action="store_true", default=False,
+        help="Whether we are running in an already forked environment. INTERNAL USE ONLY!."
     )
     group.addoption(
         VERBOSE_MPI_ARG, action="store_true", default=False,

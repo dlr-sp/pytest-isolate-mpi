@@ -14,3 +14,6 @@ keywords = []
 authors = [
   { name = "gilfree", email = "gilfree@users.noreply.github.com" },
 ]
+
+[project.entry-points.pytest11]
+pytest_isolate = "pytest_isolate_mpi.plugin"

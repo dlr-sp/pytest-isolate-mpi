@@ -174,6 +174,8 @@ class MPIPlugin(object):
                     pytest.ExitCode.USAGE_ERROR)
 
     def pytest_generate_tests(self, metafunc):
+        # FIXME: why is this not used in the forked case?
+
         for mark in metafunc.definition.iter_markers(name="mpi"):
             ranks = mark.kwargs.get("ranks")
             if ranks is not None:
@@ -271,6 +273,7 @@ class MPIPlugin(object):
                     from mpi4py import MPI
                 except ImportError:
                     pytest.fail("MPI tests require that mpi4py be installed")
+
                 comm = MPI.COMM_WORLD
                 min_size = mark.kwargs.get('min_size')
                 if min_size is not None and comm.size < min_size:
@@ -280,15 +283,17 @@ class MPIPlugin(object):
                         "test".format(min_size, comm.size)
                     )
 
-    # @pytest.hookimpl(trylast=True)
-    # def pytest_sessionstart(self, session):
-    #     print('starting test session:', session)
-    #     self._session = session
+    @pytest.hookimpl(trylast=True)
+    def pytest_sessionstart(self, session):
+        # TODO: only do this if we are set to very verbose
+        print('starting test session:', session)
+        self._session = session
 
-    # @pytest.hookimpl
-    # def pytest_sessionfinish(self, session):
-    #     print('terminating test session:', session)
-    #     self._session = None
+    @pytest.hookimpl
+    def pytest_sessionfinish(self, session):
+        # TODO: only do this if we are set to very verbose
+        print('terminating test session:', session)
+        self._session = None
 
     @pytest.hookimpl(tryfirst=True)
     def pytest_runtest_protocol(self, item):
@@ -317,9 +322,9 @@ class MPIPlugin(object):
 
         cmd = [
             self._mpirun_exe, "-n", str(mpi_ranks),
-            sys.executable, "-m", "pytest",
+            sys.executable, "-m", "pytest", "--debug",
             "--no-header", "--with-mpi",
-            item.nodeid,
+            item.nodeid  # .rstrip('[123456789]'),
         ]
 
         print("dispatching command:", cmd)

@@ -176,30 +176,33 @@ class MPIPlugin(object):
     def pytest_generate_tests(self, metafunc):
         # FIXME: why is this not used in the forked case?
 
+        print("moepmoepmoep")
+        print("in pytest_generate_tests")
+
         for mark in metafunc.definition.iter_markers(name="mpi"):
             ranks = mark.kwargs.get("ranks")
             if ranks is not None:
-                if not metafunc.config.getoption(FORKED_MPI_ARG):
-                    metafunc.definition.add_marker(pytest.mark.skip(
-                        reason=f"need {FORKED_MPI_ARG} option to run with dynamic number of ranks")
-                    )
+                # if not metafunc.config.getoption(FORKED_MPI_ARG):
+                #     metafunc.definition.add_marker(pytest.mark.skip(
+                #         reason=f"need {FORKED_MPI_ARG} option to run with dynamic number of ranks")
+                #     )
+                #
+                #     return
 
-                    return
+                #
+                # if not isinstance(ranks, collections.abc.Sequence):
+                #     pytest.exit(
+                #         "Range of MPI ranks must be an integer sequence",
+                #         pytest.ExitCode.USAGE_ERROR
+                #     )
 
-                if not isinstance(ranks, collections.abc.Sequence):
+                if not isinstance(ranks, int) or ranks <= 0:
                     pytest.exit(
-                        "Range of MPI ranks must be an integer sequence",
+                        "Number of MPI ranks must be a positive integer",
                         pytest.ExitCode.USAGE_ERROR
                     )
 
-                for n in ranks:
-                    if not isinstance(n, int) or n <= 0:
-                        pytest.exit(
-                            "Number of MPI ranks must be a positive integer",
-                            pytest.ExitCode.USAGE_ERROR
-                        )
-
-                metafunc.parametrize("mpi_ranks", ranks)
+                metafunc.parametrize("mpi_ranks", [ranks])
 
     def pytest_collection_modifyitems(self, config, items):
         """
@@ -207,6 +210,9 @@ class MPIPlugin(object):
         """
         with_mpi = config.getoption(WITH_MPI_ARG)
         only_mpi = config.getoption(ONLY_MPI_ARG)
+
+        print("in pytest_collection_modifyitems")
+
         for item in items:
             if with_mpi:
                 self._add_markers(item)
@@ -323,8 +329,9 @@ class MPIPlugin(object):
         cmd = [
             self._mpirun_exe, "-n", str(mpi_ranks),
             sys.executable, "-m", "pytest", "--debug",
-            "--no-header", "--with-mpi",
-            item.nodeid  # .rstrip('[123456789]'),
+            # "--no-header",
+            "--with-mpi",
+            item.nodeid.rstrip('[0123456789]'),
         ]
 
         print("dispatching command:", cmd)
@@ -336,7 +343,9 @@ class MPIPlugin(object):
         err_fd, err_path = mkstemp()
         err = os.fdopen(err_fd, 'w')
 
-        proc = Popen(cmd, stdout=out, stderr=err, env=os.environ,
+        proc = Popen(cmd,
+                     # stdout=out, stderr=err,
+                     env=os.environ,
                      universal_newlines=True)
 
         proc.wait()
@@ -433,6 +442,10 @@ def mpi_tmp_path(tmp_path):
     name = str(tmp_path) if rank == 0 else None
     name = comm.bcast(name, root=0)
     return Path(name)
+#
+# @pytest.fixture
+# def run_as_subprocesses(ranks):
+#     return "horst"
 
 
 def pytest_configure(config):

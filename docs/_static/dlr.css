@@ -1,0 +1,78 @@
+@font-face {
+    font-family: Frutiger;
+    src: url("FrutigerLTW02-45Light.eot?#iefix") format("eot"), url("FrutigerLTW02-45Light.woff2") format("woff2"), url("FrutigerLTW02-45Light.woff") format("woff"), url("FrutigerLTW02-45Light.ttf") format("truetype");
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: Frutiger;
+    src: url("FrutigerLTW02-65Bold.eot?#iefix") format("eot"), url("FrutigerLTW02-65Bold.woff2") format("woff2"), url("FrutigerLTW02-65Bold.woff") format("woff"), url("FrutigerLTW02-65Bold.ttf") format("truetype");
+    font-weight: bold;
+}
+
+body {
+    font-family: Frutiger, sans-serif;
+    color: #000;
+}
+
+h1, h2, .rst-content .toctree-wrapper p.caption, h3, h4, h5, h6, legend {
+    font-family: Frutiger, sans-serif;
+}
+
+a, a:link, a:visited, a:hover {
+    color: #06c
+}
+
+.wy-menu-vertical header, .wy-menu-vertical p.caption,
+.wy-menu-vertical .toctree-l1 a {
+    color: #fff
+}
+
+.wy-menu-vertical a:active {
+    background: #fcfcfc;
+    color: #404040;
+}
+
+.wy-nav-content {
+    background: #fff;
+}
+
+.wy-side-nav-search {
+    background-color: #dedede;
+    padding: 20px
+}
+
+.wy-side-nav-search::before {
+    content: "";
+    display: inline-block;
+    background-image: url("dlr.svg");
+	width: 520px;
+    height: 114px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    margin-bottom: -50px;
+	transform: scale(0.5);
+	transform-origin: 0 0;
+}
+
+.wy-side-nav-search > div.version {
+    color: rgba(0,0,0,255);
+}
+
+.wy-side-nav-search > div.version::before {
+    content: 'Version'
+}
+
+.wy-side-nav-search > a.icon:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.wy-side-nav-search > a.icon {
+    margin-top: .809em;
+    font-size: 150%;
+}
+
+.wy-nav-top {
+    background: #dedede;
+    color: #000;
+}

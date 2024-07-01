@@ -1,0 +1,16 @@
+prune .gitlab-ci.yml
+
+include .editorconfig
+include CHANGES.rst
+include README.rst
+include Makefile
+
+recursive-include data *.txt
+recursive-include tests *
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+
+recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif
+recursive-include docs *.css *.eot *.ico *.svg *.ttf *.woff *.woff2 *.js
+prune docs/_build
+prune docs/code

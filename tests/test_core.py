@@ -1,4 +1,5 @@
 import pytest
+import pytest_isolate_mpi
 
 
 @pytest.mark.mpi(ranks=[1, 2, 3])

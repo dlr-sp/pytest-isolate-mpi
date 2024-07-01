@@ -16,4 +16,4 @@ authors = [
 ]
 
 [project.entry-points.pytest11]
-pytest_isolate = "pytest_isolate_mpi.plugin"
+pytest_isolate_mpi = "pytest_isolate_mpi.plugin"

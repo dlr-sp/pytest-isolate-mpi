@@ -1,6 +1,6 @@
 import pytest
 
 
-@pytest.mark.mpi(procs=3)
-def test_sum():
-    assert True
+@pytest.mark.mpi(ranks=[1, 2, 3])
+def test_sum(mpi_ranks):
+    assert False

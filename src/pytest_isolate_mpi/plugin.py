@@ -151,7 +151,6 @@ class MPIPlugin(object):
         Hook setting config object (always called at least once)
         """
         self._is_testing_mpi = self._testing_mpi(config)
-        # self._forked_mpi = config.getoption(FORKED_MPI_ARG)
         self._is_forked_mpi_environment = config.getoption(IS_FORKED_MPI_ARG)
         self._verbose_mpi_info = config.getoption(VERBOSE_MPI_ARG)
 
@@ -177,35 +176,29 @@ class MPIPlugin(object):
                     pytest.ExitCode.USAGE_ERROR)
 
     def pytest_generate_tests(self, metafunc):
-        # FIXME: why is this not used in the forked case?
-
-        print("moepmoepmoep")
-        print("in pytest_generate_tests")
-
+        """Extend the marker @pytest.mark.mpi such that we have parametrization of the tests w.r.t. # ranks."""
         for mark in metafunc.definition.iter_markers(name="mpi"):
             ranks = mark.kwargs.get("ranks")
             if ranks is not None:
-                # if not metafunc.config.getoption(FORKED_MPI_ARG):
-                #     metafunc.definition.add_marker(pytest.mark.skip(
-                #         reason=f"need {FORKED_MPI_ARG} option to run with dynamic number of ranks")
-                #     )
-                #
-                #     return
-
-                #
-                # if not isinstance(ranks, collections.abc.Sequence):
-                #     pytest.exit(
-                #         "Range of MPI ranks must be an integer sequence",
-                #         pytest.ExitCode.USAGE_ERROR
-                #     )
-
-                if not isinstance(ranks, int) or ranks <= 0:
+                if isinstance(ranks, collections.abc.Sequence):
+                    list_of_ranks = ranks
+                elif isinstance(ranks, int):
+                    list_of_ranks = [ranks]
+                else:
+                    list_of_ranks = []
                     pytest.exit(
-                        "Number of MPI ranks must be a positive integer",
+                        "Range of MPI ranks must be an integer or an integer sequence",
                         pytest.ExitCode.USAGE_ERROR
                     )
 
-                metafunc.parametrize("mpi_ranks", [ranks])
+                for rank in list_of_ranks:
+                    if not isinstance(rank, int) or rank <= 0:
+                        pytest.exit(
+                            "Number of MPI ranks must be a positive integer",
+                            pytest.ExitCode.USAGE_ERROR
+                    )
+
+                metafunc.parametrize("mpi_ranks", list_of_ranks)
 
     def pytest_collection_modifyitems(self, config, items):
         """
@@ -213,8 +206,6 @@ class MPIPlugin(object):
         """
         with_mpi = config.getoption(WITH_MPI_ARG)
         only_mpi = config.getoption(ONLY_MPI_ARG)
-
-        print("in pytest_collection_modifyitems")
 
         for item in items:
             if with_mpi:
@@ -338,7 +329,7 @@ class MPIPlugin(object):
             sys.executable, "-m", "pytest", "--debug", IS_FORKED_MPI_ARG,
             # "--no-header",
             "--with-mpi",
-            item.nodeid  #.rstrip('[0123456789]'),
+            item.nodeid
         ]
 
         print("dispatching command:", cmd)
@@ -364,9 +355,20 @@ class MPIPlugin(object):
         err.close()
         os.remove(err_path)
 
-        import marshal
-        report_dumps = marshal.loads(err_msg)
-        return [runner.TestReport(**x) for x in report_dumps]
+        # TODO: improve this, this is a quick hack
+        return [
+            runner.TestReport(
+                nodeid=item.nodeid,
+                location=item.location,
+                outcome="failed",  # TODO: improve this
+                when="call",  # TODO: improve this
+                keywords=[],
+                longrepr=item.nodeid
+            )
+        ]
+        # import marshal
+        # report_dumps = marshal.loads(err_msg)
+        # [runner.TestReport(**x) for x in report_dumps]
 
         # ff = py.process.ForkedFunc(runforked)
         # result = ff.waitfinish()

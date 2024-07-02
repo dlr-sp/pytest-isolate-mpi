@@ -1,1 +1,1 @@
-from . import plugin
+from .plugin import __version__

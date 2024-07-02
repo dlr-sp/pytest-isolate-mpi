@@ -10,7 +10,7 @@ import enum
 import pickle
 import sys
 import warnings
-from typing import Any
+from typing import Any, Union
 from pathlib import Path
 from tempfile import mkstemp
 from tempfile import TemporaryDirectory
@@ -43,7 +43,6 @@ MPI_ENV_HINTS = [
 ]
 
 
-
 @dataclasses.dataclass(init=False)
 class MPIConfiguration:
     """Configuration defining how to execute an MPI-parallel subprocess"""
@@ -52,6 +51,7 @@ class MPIConfiguration:
     flag_for_passing_environment_variables: str
 
     def __init__(self):
+        """TODO: Make this configurable by the pytest ini files."""
         self.mpirun_executable = self.__get_mpirun_executable()
         self.flag_for_processes = "-n"
         self.flag_for_passing_environment_variables = "-x"
@@ -61,13 +61,31 @@ class MPIConfiguration:
                 "failed to find mpirun/mpiexec required for starting MPI tests",
                 pytest.ExitCode.USAGE_ERROR)
 
+    def extend_command_for_parallel_execution(
+        self, cmd: list[str], ranks: int, env_mod: dict[str, Union[str, int]]
+    ) -> list[str]:
+        """Extend a given command sequence by the mpirun call for the given number of ranks and environment modification
+        given by env.
 
-    def extend_command_for_parallel_execution(self, cmd: list[str], ranks: int, env) -> list[str]:
-        return [
+        """
+        parallel_cmd = [
             self.mpirun_executable,
             self.flag_for_processes,
             str(ranks),
-        ] + cmd
+        ] \
+        + self.get_arguments_for_passing_environment_variables(env_mod) \
+        +  cmd
+
+        return parallel_cmd
+
+    def get_arguments_for_passing_environment_variables(self, env_mod: dict[str, Union[str, int]]):
+
+        args = []
+        for name, value in env_mod:
+            args += [self.flag_for_passing_environment_variables, f"{name}={value}"]
+
+        return args
+
 
     @staticmethod
     def __get_mpirun_executable() -> str:
@@ -341,7 +359,7 @@ class MPIPlugin:
         cmd = self._mpi_configuration.extend_command_for_parallel_execution(
             cmd=[sys.executable, "-m", "mpi4py", "-m", "pytest", "--debug", "-s", item.nodeid],
             ranks=mpi_ranks,
-            env={},
+            env_mod={},
         )
 
         if self._verbose_mpi_info:

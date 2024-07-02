@@ -3,9 +3,8 @@ Support for testing python code with MPI and pytest
 """
 import copy
 import subprocess
-from enum import Enum
+import enum
 from pathlib import Path
-from subprocess import Popen
 from tempfile import mkstemp
 
 import collections
@@ -40,10 +39,14 @@ MPI_ENV_HINTS = [
 ]
 
 
-class MPIMarkerEnum(str, Enum):
+@enum.unique
+class MPIMarkerEnum(str, enum.Enum):
     """
     Enum containing all the markers used by pytest-mpi
+
+    FIXME: Once we are on Python 3.11, use StrEnum
     """
+
     mpi = "mpi"
     mpi_skip = "mpi_skip"
     mpi_xfail = "mpi_xfail"
@@ -63,6 +66,7 @@ MPI_MARKERS = {
 }
 
 
+# FIXME: does this even work? the py import looks very iffy
 # copied from xdist remote
 def serialize_report(rep):
     import py
@@ -317,7 +321,8 @@ class MPIPlugin:
             item.nodeid
         ]
 
-        print(f"dispatching command: {cmd}")
+        if self._verbose_mpi_info:
+            print(f"dispatching command: {cmd}")
 
         out_fd, out_path = mkstemp()
         out = os.fdopen(out_fd, 'w')

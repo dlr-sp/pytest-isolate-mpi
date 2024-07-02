@@ -4,7 +4,7 @@ import pytest_isolate_mpi
 import time
 
 
-@pytest.mark.mpi(ranks=[1, 2, 3])
+@pytest.mark.mpi(ranks=[2])
 def test_fail(mpi_ranks):
     """Failing test -- to check whether XFAIL works.
     TODO: use xfail and test whether it works

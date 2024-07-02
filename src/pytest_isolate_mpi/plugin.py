@@ -22,6 +22,7 @@ import pytest
 
 
 from _pytest import runner
+from _pytest.reports import TestReport
 
 from . import _version
 __version__ = _version.get_versions()['version']
@@ -30,6 +31,7 @@ __version__ = _version.get_versions()['version']
 VERBOSE_MPI_ARG = "--verbose-mpi"
 IS_FORKED_MPI_ARG = "--is-forked-by-main-pytest"
 ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN = "PYTEST_ISOLATE_MPI_IS_FORKED"
+
 
 
 # list of env variables copied from HPX
@@ -251,35 +253,6 @@ class MPIPlugin:
     #     for item in items:
     #         self._add_markers(item)
 
-    def pytest_terminal_summary(self, terminalreporter, exitstatus, *args):
-        """
-        Hook for printing MPI info at the end of the run
-        """
-        # pylint: disable=unused-argument
-        if self._verbose_mpi_info:
-            terminalreporter.section("MPI Information")
-            try:
-                from mpi4py import MPI, rc, get_config
-            except ImportError:
-                terminalreporter.write("Unable to import mpi4py")
-            else:
-                comm = MPI.COMM_WORLD
-                terminalreporter.write(f"rank: {comm.rank}\n")
-                terminalreporter.write(f"size: {comm.size}\n")
-
-                terminalreporter.write(f"MPI version: {'.'.join([str(v) for v in MPI.Get_version()])}\n")
-                terminalreporter.write(f"MPI library version: {MPI.Get_library_version()}\n")
-
-                vendor, vendor_version = MPI.get_vendor()
-                terminalreporter.write(f"MPI vendor: {vendor} {'.'.join([str(v) for v in vendor_version])}\n")
-
-                terminalreporter.write("mpi4py rc:\n")
-                for name, value in vars(rc).items():
-                    terminalreporter.write(f" {name}: {value}\n")
-
-                terminalreporter.write("mpi4py config:\n")
-                for name, value in get_config().items():
-                    terminalreporter.write(f" {name}: {value}\n")
 
     def pytest_runtest_setup(self, item):
         """
@@ -346,6 +319,11 @@ class MPIPlugin:
 
         comm = MPI.COMM_WORLD
         reports = runner.runtestprotocol(item, log=False)
+        for report in reports:
+            if report.location is not None:
+                fspath, lineno, domain = report.location
+                report.location = fspath, lineno, f'{domain}[rank={comm.rank}]'
+            setattr(report, 'rank', comm.rank)
         with open(os.path.join(os.environ['PYTEST_MPI_REPORTS_PATH'], f'{comm.rank}'), mode='wb') as f:
             pickle.dump(reports, f)
         return reports
@@ -423,6 +401,49 @@ class MPIPlugin:
             ]
         return reports
 
+    pytest.hookimpl
+    def pytest_terminal_summary(self, terminalreporter, exitstatus, config):  # pylint: disable=unused-argument
+        """Hook for printing MPI info at the end of the run"""
+        # Patch nodeids to have rank info in short test summary. Sadly, there appears no way to revert that.
+        for rep in self._walk_terminalreporter_reports(terminalreporter):
+            rank = getattr(rep, 'rank', None)
+            if rank is None:
+                continue
+            rep.nodeid = f'{rep.nodeid}[rank={rank}]'
+        if self._verbose_mpi_info:
+            self._report_mpi_information(terminalreporter)
+
+    def _walk_terminalreporter_reports(self, terminalreporter):
+        for stat in terminalreporter.stats.values():
+            if isinstance(stat, list):
+                for rep in stat:
+                    if isinstance(rep, TestReport):
+                        yield rep
+
+    def _report_mpi_information(self, terminalreporter):
+        terminalreporter.section("MPI Information")
+        try:
+            from mpi4py import MPI, rc, get_config
+        except ImportError:
+            terminalreporter.write("Unable to import mpi4py")
+        else:
+            comm = MPI.COMM_WORLD
+            terminalreporter.write(f"rank: {comm.rank}\n")
+            terminalreporter.write(f"size: {comm.size}\n")
+
+            terminalreporter.write(f"MPI version: {'.'.join([str(v) for v in MPI.Get_version()])}\n")
+            terminalreporter.write(f"MPI library version: {MPI.Get_library_version()}\n")
+
+            vendor, vendor_version = MPI.get_vendor()
+            terminalreporter.write(f"MPI vendor: {vendor} {'.'.join([str(v) for v in vendor_version])}\n")
+
+            terminalreporter.write("mpi4py rc:\n")
+            for name, value in vars(rc).items():
+                terminalreporter.write(f" {name}: {value}\n")
+
+            terminalreporter.write("mpi4py config:\n")
+            for name, value in get_config().items():
+                terminalreporter.write(f" {name}: {value}\n")
 
 @pytest.fixture
 def mpi_file_name(tmpdir, request):

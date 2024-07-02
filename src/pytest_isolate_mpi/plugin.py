@@ -1,7 +1,10 @@
 """
 Support for testing python code with MPI and pytest
 """
+from __future__ import annotations
+
 import copy
+import dataclasses
 import subprocess
 import enum
 import pickle
@@ -39,6 +42,44 @@ MPI_ENV_HINTS = [
     "PALS_NODEID",
 ]
 
+
+
+@dataclasses.dataclass(init=False)
+class MPIConfiguration:
+    """Configuration defining how to execute an MPI-parallel subprocess"""
+    mpirun_executable: str
+    flag_for_processes: str
+    flag_for_passing_environment_variables: str
+
+    def __init__(self):
+        self.mpirun_executable = self.__get_mpirun_executable()
+        self.flag_for_processes = "-n"
+        self.flag_for_passing_environment_variables = "-x"
+
+        if not self.mpirun_executable:
+            pytest.exit(
+                "failed to find mpirun/mpiexec required for starting MPI tests",
+                pytest.ExitCode.USAGE_ERROR)
+
+
+    def extend_command_for_parallel_execution(self, cmd: list[str], ranks: int, env) -> list[str]:
+        return [
+            self.mpirun_executable,
+            self.flag_for_processes,
+            str(ranks),
+        ] + cmd
+
+    @staticmethod
+    def __get_mpirun_executable() -> str:
+        from distutils import spawn
+
+        mpirun = ""
+        if spawn.find_executable("mpirun") is not None:
+            mpirun = "mpirun"
+        elif spawn.find_executable("mpiexec") is not None:
+            mpirun = "mpiexec"
+
+        return mpirun
 
 @enum.unique
 class MPIMarkerEnum(str, enum.Enum):
@@ -132,7 +173,7 @@ class MPIPlugin:
 
     _is_forked_mpi_environment: bool = False
     _verbose_mpi_info: bool = False
-    _mpirun_exe: str = ""
+    _mpi_configuration: MPIConfiguration = MPIConfiguration()
     _session: Any = None
 
     def _add_markers(self, item):
@@ -143,32 +184,13 @@ class MPIPlugin:
             if label in item.keywords:
                 item.add_marker(marker)
 
-    @staticmethod
-    def __get_mpirun_executable() -> str:
-        from distutils import spawn
-
-        mpirun = ""
-        if spawn.find_executable("mpirun") is not None:
-            mpirun = "mpirun"
-        elif spawn.find_executable("mpiexec") is not None:
-            mpirun = "mpiexec"
-
-        return mpirun
-
     def pytest_configure(self, config):
         """
         Hook setting config object (always called at least once)
         """
         self._is_forked_mpi_environment = bool(os.environ.get(ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN, ''))
-
         self._verbose_mpi_info = config.getoption(VERBOSE_MPI_ARG)
-        self._mpirun_exe = self.__get_mpirun_executable()
-
-        # FIXME: should this be here? or go into the __get_mripun_executable?
-        if not self._mpirun_exe:
-            pytest.exit(
-                "failed to find mpirun/mpiexec required for starting MPI tests",
-                pytest.ExitCode.USAGE_ERROR)
+        self._mpi_configuration: MPIConfiguration = MPIConfiguration()
 
         # double check whether MPI environment variables are residing in the forked env
         if not self._is_forked_mpi_environment:
@@ -316,12 +338,11 @@ class MPIPlugin:
             if fixture == "mpi_ranks" and "mpi_ranks" in item.callspec.params:
                 mpi_ranks = item.callspec.params["mpi_ranks"]
 
-        cmd = [
-            self._mpirun_exe, "-n", str(mpi_ranks),
-            sys.executable, "-m", "mpi4py", "-m", "pytest", "--debug", "-s",
-            # "--no-header",
-            item.nodeid
-        ]
+        cmd = self._mpi_configuration.extend_command_for_parallel_execution(
+            cmd=[sys.executable, "-m", "mpi4py", "-m", "pytest", "--debug", "-s", item.nodeid],
+            ranks=mpi_ranks,
+            env={},
+        )
 
         if self._verbose_mpi_info:
             print(f"dispatching command: {cmd}")

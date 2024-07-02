@@ -17,3 +17,8 @@ authors = [
 
 [project.entry-points.pytest11]
 pytest_isolate_mpi = "pytest_isolate_mpi.plugin"
+
+
+[tool.black]
+target_version = ['py38']
+line-length = 120

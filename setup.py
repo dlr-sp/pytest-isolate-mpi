@@ -11,7 +11,7 @@ with open('CHANGES.rst', encoding='utf-8') as history_file:
     changes = history_file.read()
 
 REQUIREMENTS = [
-    'pytest',
+    'pytest >= 5',
     'mpi4py',
     # add additional project dependencies here
 ]
@@ -24,7 +24,8 @@ DEV_REQUIREMENTS = REQUIREMENTS + [
     'pylint',
     'pytest-cov',
     'wheel',
-    'numpy'
+    'numpy',
+    'black'
     # add additional development dependencies here
 ]
 

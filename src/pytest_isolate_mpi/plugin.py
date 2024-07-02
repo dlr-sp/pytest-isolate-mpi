@@ -5,7 +5,6 @@ import copy
 import subprocess
 import enum
 import pickle
-from enum import Enum
 from pathlib import Path
 from tempfile import mkstemp
 from tempfile import TemporaryDirectory
@@ -19,9 +18,7 @@ import warnings
 
 from typing import Any
 
-from mpi4py import MPI
 from _pytest import runner
-from mpi4py import MPI
 
 from . import _version
 __version__ = _version.get_versions()['version']
@@ -263,7 +260,6 @@ class MPIPlugin:
                 pytest.fail("MPI tests require that mpi4py be installed")
 
             # TODO: remove this? (we fork with the required number of tests anyway!)
-
             comm = MPI.COMM_WORLD
             min_size = mark.kwargs.get('min_size')
             if min_size is not None and comm.size < min_size:
@@ -303,6 +299,11 @@ class MPIPlugin:
         return True
 
     def _mpi_runtestprococol_inner(self, item):
+        try:
+            from mpi4py import MPI, rc, get_config
+        except ImportError:
+            pytest.fail("MPI tests require that mpi4py be installed")
+
         comm = MPI.COMM_WORLD
         reports = runner.runtestprotocol(item, log=False)
         with open(os.path.join(os.environ['PYTEST_MPI_REPORTS_PATH'], f'{comm.rank}'), mode='wb') as f:

@@ -4,8 +4,11 @@ Support for testing python code with MPI and pytest
 import copy
 import subprocess
 import enum
+import pickle
+from enum import Enum
 from pathlib import Path
 from tempfile import mkstemp
+from tempfile import TemporaryDirectory
 
 import collections
 import os
@@ -16,6 +19,7 @@ import warnings
 
 from typing import Any
 
+from mpi4py import MPI
 from _pytest import runner
 from mpi4py import MPI
 
@@ -158,10 +162,7 @@ class MPIPlugin:
         """
         Hook setting config object (always called at least once)
         """
-        try:
-            self._is_forked_mpi_environment = config.getoption(IS_FORKED_MPI_ARG)
-        except ValueError:
-            self._is_forked_mpi_environment = False
+        self._is_forked_mpi_environment = bool(os.environ.get(ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN, ''))
 
         self._verbose_mpi_info = config.getoption(VERBOSE_MPI_ARG)
         self._mpirun_exe = self.__get_mpirun_executable()
@@ -296,7 +297,7 @@ class MPIPlugin:
             nodeid=item.nodeid, location=item.location)
 
         if self._is_forked_mpi_environment:
-            reports = runner.runtestprotocol(item, log=False)
+            reports = self._mpi_runtestprococol_inner(item)
         else:
             reports = self.mpi_runtestprotocol(item)
 
@@ -308,6 +309,13 @@ class MPIPlugin:
 
         return True
 
+    def _mpi_runtestprococol_inner(self, item):
+        comm = MPI.COMM_WORLD
+        reports = runner.runtestprotocol(item, log=False)
+        with open(os.path.join(os.environ['PYTEST_MPI_REPORTS_PATH'], f'{comm.rank}'), mode='wb') as f:
+            pickle.dump(reports, f)
+        return reports
+
     def mpi_runtestprotocol(self, item):
         mpi_ranks = 1
         for fixture in item.fixturenames:
@@ -316,7 +324,7 @@ class MPIPlugin:
 
         cmd = [
             self._mpirun_exe, "-n", str(mpi_ranks),
-            sys.executable, "-m", "pytest", "--debug", IS_FORKED_MPI_ARG, "-s",
+            sys.executable, "-m", "pytest", "--debug", "-s",
             # "--no-header",
             item.nodeid
         ]
@@ -330,26 +338,35 @@ class MPIPlugin:
 
         err_fd, err_path = mkstemp()
         err = os.fdopen(err_fd, 'w')
+        reports = []
 
-        run_env = copy.deepcopy(os.environ)
-        run_env[ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN] = "1"
+        with TemporaryDirectory() as tmpdir:
+            run_env = copy.deepcopy(os.environ)
+            run_env[ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN] = "1"
+            run_env['PYTEST_MPI_REPORTS_PATH'] = tmpdir
 
-        was_test_successful = False
-
-        try:
-            subprocess.check_call(cmd, env=run_env, universal_newlines=True, stdout=sys.stdout, stderr=sys.stderr)
-            was_test_successful = True
-        except subprocess.CalledProcessError as e:
+            did_test_suite_run_through = True
             was_test_successful = False
-            # TODO: extend by all known return codes of pytest
-            did_test_suite_run_through = e.returncode == 1
-            if e.returncode == 1:
-                did_test_suite_run_through = True
-            else:
-                did_test_suite_run_through = False
-        finally:
-            sys.stdout.flush()
-            sys.stderr.flush()
+
+            try:
+                subprocess.check_call(cmd, env=run_env, universal_newlines=True, stdout=sys.stdout, stderr=sys.stderr)
+                was_test_successful = True
+            except subprocess.CalledProcessError as e:
+                was_test_successful = False
+                # TODO: extend by all known return codes of pytest
+                did_test_suite_run_through = e.returncode == 1
+                if e.returncode == 1:
+                    did_test_suite_run_through = True
+                else:
+                    did_test_suite_run_through = False
+            finally:
+                sys.stdout.flush()
+                sys.stderr.flush()
+
+            if did_test_suite_run_through:
+                for i in range(mpi_ranks):
+                    with open(os.path.join(tmpdir, f'{i}'), mode='rb') as f:
+                        reports += pickle.load(f)
 
         with open(err_path, 'rb') as f:
             err_msg = f.read()
@@ -358,30 +375,18 @@ class MPIPlugin:
         err.close()
         os.remove(err_path)
 
-        # TODO: improve this, this is a quick hack
-        return [
-            runner.TestReport(
-                nodeid=item.nodeid,
-                location=item.location,
-                outcome="passed" if was_test_successful else "failed",  # TODO: improve this
-                when="call",  # TODO: improve this
-                keywords=[],
-                longrepr=item.nodeid
-            )
-        ]
-        # import marshal
-        # report_dumps = marshal.loads(err_msg)
-        # [runner.TestReport(**x) for x in report_dumps]
-
-        # ff = py.process.ForkedFunc(runforked)
-        # result = ff.waitfinish()
-        # if result.retval is not None:
-        #     report_dumps = marshal.loads(result.retval)
-        #     return [runner.TestReport(**x) for x in report_dumps]
-        # else:
-        #     if result.exitstatus == EXITSTATUS_TESTEXIT:
-        #         pytest.exit(f"forked test item {item} raised Exit")
-        #     return [report_process_crash(item, result)]
+        if not did_test_suite_run_through:
+            return [
+                runner.TestReport(
+                    nodeid=item.nodeid,
+                    location=item.location,
+                    outcome="passed" if was_test_successful else "failed",  # TODO: improve this
+                    when="call",  # TODO: improve this
+                    keywords=[],
+                    longrepr=item.nodeid
+                )
+            ]
+        return reports
 
 
 @pytest.fixture

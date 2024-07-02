@@ -128,7 +128,7 @@ class MPIPlugin:
     _is_forked_mpi_environment: bool = False
     _verbose_mpi_info: bool = False
     _mpirun_exe: str = ""
-    _session: Any
+    _session: Any = None
 
     def _add_markers(self, item):
         """
@@ -162,7 +162,7 @@ class MPIPlugin:
         self._verbose_mpi_info = config.getoption(VERBOSE_MPI_ARG)
         self._mpirun_exe = self.__get_mpirun_executable()
 
-        # FIXME: should this be here?
+        # FIXME: should this be here? or go into the __get_mripun_executable?
         if not self._mpirun_exe:
             pytest.exit(
                 "failed to find mpirun/mpiexec required for starting MPI tests",
@@ -205,7 +205,7 @@ class MPIPlugin:
         """
         Skip tests depending on what options are chosen
         """
-
+        # TODO: remove the whole method?
         for item in items:
             self._add_markers(item)
 
@@ -222,28 +222,22 @@ class MPIPlugin:
                 terminalreporter.write("Unable to import mpi4py")
             else:
                 comm = MPI.COMM_WORLD
-                terminalreporter.write("rank: {}\n".format(comm.rank))
-                terminalreporter.write("size: {}\n".format(comm.size))
+                terminalreporter.write(f"rank: {comm.rank}\n")
+                terminalreporter.write(f"size: {comm.size}\n")
 
-                terminalreporter.write("MPI version: {}\n".format(
-                    '.'.join([str(v) for v in MPI.Get_version()])
-                ))
-                terminalreporter.write("MPI library version: {}\n".format(
-                    MPI.Get_library_version()
-                ))
+                terminalreporter.write(f"MPI version: {'.'.join([str(v) for v in MPI.Get_version()])}\n")
+                terminalreporter.write(f"MPI library version: {MPI.Get_library_version()}\n")
 
                 vendor, vendor_version = MPI.get_vendor()
-                terminalreporter.write("MPI vendor: {} {}\n".format(
-                    vendor, '.'.join([str(v) for v in vendor_version])
-                ))
+                terminalreporter.write(f"MPI vendor: {vendor} {'.'.join([str(v) for v in vendor_version])}\n")
 
-                terminalreporter.write("mpi4py rc: \n")
+                terminalreporter.write("mpi4py rc:\n")
                 for name, value in vars(rc).items():
-                    terminalreporter.write(" {}: {}\n".format(name, value))
+                    terminalreporter.write(f" {name}: {value}\n")
 
                 terminalreporter.write("mpi4py config:\n")
                 for name, value in get_config().items():
-                    terminalreporter.write(" {}: {}\n".format(name, value))
+                    terminalreporter.write(f" {name}: {value}\n")
 
     def pytest_runtest_setup(self, item):
         """

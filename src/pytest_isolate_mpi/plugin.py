@@ -5,6 +5,9 @@ import copy
 import subprocess
 import enum
 import pickle
+import sys
+import warnings
+from typing import Any
 from pathlib import Path
 from tempfile import mkstemp
 from tempfile import TemporaryDirectory
@@ -13,10 +16,7 @@ import collections
 import os
 import py
 import pytest
-import sys
-import warnings
 
-from typing import Any
 
 from _pytest import runner
 
@@ -203,13 +203,13 @@ class MPIPlugin:
 
                 metafunc.parametrize("mpi_ranks", list_of_ranks)
 
-    def pytest_collection_modifyitems(self, config, items):
-        """
-        Skip tests depending on what options are chosen
-        """
-        # TODO: remove the whole method?
-        for item in items:
-            self._add_markers(item)
+    # TODO: remove the whole method?
+    # def pytest_collection_modifyitems(self, config, items):
+    #     """
+    #     Skip tests depending on what options are chosen
+    #     """
+    #     for item in items:
+    #         self._add_markers(item)
 
     def pytest_terminal_summary(self, terminalreporter, exitstatus, *args):
         """
@@ -453,10 +453,6 @@ def mpi_tmp_path(tmp_path):
     name = str(tmp_path) if rank == 0 else None
     name = comm.bcast(name, root=0)
     return Path(name)
-#
-# @pytest.fixture
-# def run_as_subprocesses(ranks):
-#     return "horst"
 
 
 def pytest_configure(config):

@@ -2,6 +2,7 @@
 Support for testing python code with MPI and pytest
 """
 import copy
+import subprocess
 from enum import Enum
 from pathlib import Path
 from subprocess import Popen
@@ -14,7 +15,7 @@ import pytest
 import sys
 import warnings
 
-from typing import ClassVar
+from typing import Any
 
 from _pytest import runner
 
@@ -126,6 +127,7 @@ class MPIPlugin:
     _is_forked_mpi_environment: bool = False
     _verbose_mpi_info: bool = False
     _mpirun_exe: str = ""
+    _session: Any
 
     def _add_markers(self, item):
         """
@@ -272,13 +274,13 @@ class MPIPlugin:
     @pytest.hookimpl(trylast=True)
     def pytest_sessionstart(self, session):
         # TODO: only do this if we are set to very verbose
-        print('starting test session:', session)
+        print(f'starting test session: {session}')
         self._session = session
 
     @pytest.hookimpl
     def pytest_sessionfinish(self, session):
         # TODO: only do this if we are set to very verbose
-        print('terminating test session:', session)
+        print(f'terminating test session: {session}')
         self._session = None
 
     @pytest.hookimpl(tryfirst=True)
@@ -325,12 +327,19 @@ class MPIPlugin:
         run_env = copy.deepcopy(os.environ)
         run_env[ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN] = "1"
 
-        proc = Popen(cmd,
-                     # stdout=out, stderr=err,
-                     env=run_env,
-                     universal_newlines=True)
+        was_test_successful = False
 
-        proc.wait()
+        try:
+            subprocess.check_call(cmd, env=run_env, universal_newlines=True)
+            was_test_successful = True
+        except subprocess.CalledProcessError as e:
+            was_test_successful = False
+            # TODO: extend by all known return codes of pytest
+            did_test_suite_run_through = e.returncode == 1
+            if e.returncode == 1:
+                did_test_suite_run_through = True
+            else:
+                did_test_suite_run_through = False
 
         with open(err_path, 'rb') as f:
             err_msg = f.read()
@@ -344,7 +353,7 @@ class MPIPlugin:
             runner.TestReport(
                 nodeid=item.nodeid,
                 location=item.location,
-                outcome="failed",  # TODO: improve this
+                outcome="passed" if was_test_successful else "failed",  # TODO: improve this
                 when="call",  # TODO: improve this
                 keywords=[],
                 longrepr=item.nodeid

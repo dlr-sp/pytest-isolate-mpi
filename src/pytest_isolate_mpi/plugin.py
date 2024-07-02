@@ -337,7 +337,7 @@ class MPIPlugin:
         was_test_successful = False
 
         try:
-            subprocess.check_call(cmd, env=run_env, universal_newlines=True)
+            subprocess.check_call(cmd, env=run_env, universal_newlines=True, stdout=sys.stdout, stderr=sys.stderr)
             was_test_successful = True
         except subprocess.CalledProcessError as e:
             was_test_successful = False
@@ -347,6 +347,9 @@ class MPIPlugin:
                 did_test_suite_run_through = True
             else:
                 did_test_suite_run_through = False
+        finally:
+            sys.stdout.flush()
+            sys.stderr.flush()
 
         with open(err_path, 'rb') as f:
             err_msg = f.read()

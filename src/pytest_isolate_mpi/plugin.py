@@ -271,13 +271,6 @@ class MPIPlugin:
                     f"Test requires {min_size} MPI processes, only {comm.size} MPI processes specified, skipping test"
                 )
 
-    @pytest.hookimpl(hookwrapper=True, tryfirst=True)
-    def pytest_runtest_makereport(self, item, call):
-        outcome = yield
-        rep = outcome.get_result()
-        if item.config.getoption(IS_FORKED_MPI_ARG) and rep.when == "call" and rep.failed:
-            MPI.COMM_WORLD.Abort()
-
     @pytest.hookimpl(trylast=True)
     def pytest_sessionstart(self, session):
         # TODO: only do this if we are set to very verbose
@@ -324,7 +317,7 @@ class MPIPlugin:
 
         cmd = [
             self._mpirun_exe, "-n", str(mpi_ranks),
-            sys.executable, "-m", "pytest", "--debug", "-s",
+            sys.executable, "-m", "mpi4py", "-m", "pytest", "--debug", "-s",
             # "--no-header",
             item.nodeid
         ]

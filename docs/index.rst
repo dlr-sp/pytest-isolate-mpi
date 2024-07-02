@@ -6,6 +6,7 @@ Welcome to Python Boilerplate's documentation!
    :caption: Contents:
 
    readme
+   introduction
    usage
    code/modules
    changes

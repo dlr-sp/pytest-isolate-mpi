@@ -1,6 +1,7 @@
 """
 Support for testing python code with MPI and pytest
 """
+import copy
 from enum import Enum
 from pathlib import Path
 from subprocess import Popen
@@ -13,6 +14,8 @@ import pytest
 import sys
 import warnings
 
+from typing import ClassVar
+
 from _pytest import runner
 
 from . import _version
@@ -20,8 +23,8 @@ __version__ = _version.get_versions()['version']
 
 
 VERBOSE_MPI_ARG = "--verbose-mpi"
-
 IS_FORKED_MPI_ARG = "--is-forked-by-main-pytest"
+ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN = "PYTEST_ISOLATE_MPI_IS_FORKED"
 
 
 # list of env variables copied from HPX
@@ -105,13 +108,7 @@ def report_process_crash(item, result):
         return rep
 
     rep.outcome = "skipped"
-    rep.wasxfail = (
-        "reason: {xfail_reason}; "
-        "pytest-forked reason: {crash_info}".format(
-            xfail_reason=xfail_marker.kwargs["reason"],
-            crash_info=info,
-        )
-    )
+    rep.wasxfail = f"reason: {xfail_marker.kwargs['reason']}; pytest-isolate-mpi reason: {info}"
     warnings.warn(
         "pytest-forked xfail support is incomplete at the moment and may "
         "output a misleading reason message",
@@ -126,6 +123,10 @@ class MPIPlugin:
     pytest plugin to assist with testing MPI-using code
     """
 
+    _is_forked_mpi_environment: bool = False
+    _verbose_mpi_info: bool = False
+    _mpirun_exe: str = ""
+
     def _add_markers(self, item):
         """
         Add markers to tests when run under MPI.
@@ -134,33 +135,43 @@ class MPIPlugin:
             if label in item.keywords:
                 item.add_marker(marker)
 
+    @staticmethod
+    def __get_mpirun_executable() -> str:
+        from distutils import spawn
+
+        mpirun = ""
+        if spawn.find_executable("mpirun") is not None:
+            mpirun = "mpirun"
+        elif spawn.find_executable("mpiexec") is not None:
+            mpirun = "mpiexec"
+
+        return mpirun
+
     def pytest_configure(self, config):
         """
         Hook setting config object (always called at least once)
         """
-        self._is_forked_mpi_environment = config.getoption(IS_FORKED_MPI_ARG)
-        self._verbose_mpi_info = config.getoption(VERBOSE_MPI_ARG)
+        try:
+            self._is_forked_mpi_environment = config.getoption(IS_FORKED_MPI_ARG)
+        except ValueError:
+            self._is_forked_mpi_environment = False
 
+        self._verbose_mpi_info = config.getoption(VERBOSE_MPI_ARG)
+        self._mpirun_exe = self.__get_mpirun_executable()
+
+        # FIXME: should this be here?
+        if not self._mpirun_exe:
+            pytest.exit(
+                "failed to find mpirun/mpiexec required for starting MPI tests",
+                pytest.ExitCode.USAGE_ERROR)
+
+        # double check whether MPI environment variables are residing in the forked env
         if not self._is_forked_mpi_environment:
             for env in MPI_ENV_HINTS:
                 if os.getenv(env):
                     pytest.exit(
                         "forked MPI tests cannot be run in an MPI environment",
                         pytest.ExitCode.USAGE_ERROR)
-
-            from distutils import spawn
-
-            self._mpirun_exe = None
-            if spawn.find_executable("mpirun") is not None:
-                self._mpirun_exe = "mpirun"
-            elif spawn.find_executable("mpiexec") is not None:
-                self._mpirun_exe = "mpiexec"
-
-            # FIXME: should this be here?
-            if not self._mpirun_exe:
-                pytest.exit(
-                    "failed to find mpirun/mpiexec required for starting MPI tests",
-                    pytest.ExitCode.USAGE_ERROR)
 
     def pytest_generate_tests(self, metafunc):
         """Extend the marker @pytest.mark.mpi such that we have parametrization of the tests w.r.t. # ranks."""
@@ -302,7 +313,7 @@ class MPIPlugin:
             item.nodeid
         ]
 
-        print("dispatching command:", cmd)
+        print(f"dispatching command: {cmd}")
 
         out_fd, out_path = mkstemp()
         out = os.fdopen(out_fd, 'w')
@@ -311,9 +322,12 @@ class MPIPlugin:
         err_fd, err_path = mkstemp()
         err = os.fdopen(err_fd, 'w')
 
+        run_env = copy.deepcopy(os.environ)
+        run_env[ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN] = "1"
+
         proc = Popen(cmd,
                      # stdout=out, stderr=err,
-                     env=os.environ,
+                     env=run_env,
                      universal_newlines=True)
 
         proc.wait()
@@ -452,12 +466,16 @@ def pytest_addoption(parser):
     Add pytest-mpi options to pytest cli
     """
     group = parser.getgroup("mpi", description="support for MPI-enabled code")
-    # TODO: hide behind a magic environment flag
-    group.addoption(
-        IS_FORKED_MPI_ARG, action="store_true", default=False,
-        help="Whether we are running in an already forked environment. INTERNAL USE ONLY!."
-    )
     group.addoption(
         VERBOSE_MPI_ARG, action="store_true", default=False,
         help="Include detailed MPI information in output."
     )
+
+    # Argument for explicitly running a forked session.
+    # This requires two interactions to limit users from using it, aka: Explicit intent to use it is required.
+    if ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN in os.environ:
+        group.addoption(
+            IS_FORKED_MPI_ARG, action="store_true", default=False,
+            help="Whether we are running in an already forked environment. INTERNAL USE ONLY!."
+        )
+

@@ -20,6 +20,15 @@ def test_number_of_processes_matches_ranks(mpi_ranks):
     assert num_ranks == mpi_ranks
 
 
+@pytest.mark.mpi(ranks=[1, 3])
+# TODO add timeout mark?
+def test_timeout(mpi_ranks):
+    rank = MPI.COMM_WORLD.Get_rank()
+    for _ in range(10):
+        print(f"Timeout: sleeping (1) on rank `{rank}`")
+        time.sleep(1)
+
+
 @pytest.mark.mpi(ranks=[2, 3])
 def test_abort(mpi_ranks):
     time.sleep(1)

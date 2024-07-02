@@ -364,7 +364,9 @@ class MPIPlugin:
             was_test_successful = False
 
             try:
-                subprocess.check_call(cmd, env=run_env, universal_newlines=True, stdout=sys.stdout, stderr=sys.stderr)
+                subprocess.check_call(
+                    cmd, env=run_env, universal_newlines=True, stdout=sys.stdout, stderr=sys.stderr, timeout=5
+                )
                 was_test_successful = True
             except subprocess.CalledProcessError as e:
                 was_test_successful = False

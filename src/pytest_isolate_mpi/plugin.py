@@ -19,10 +19,8 @@ from . import _version
 __version__ = _version.get_versions()['version']
 
 
-WITH_MPI_ARG = "--with-mpi"
-ONLY_MPI_ARG = "--only-mpi"
-FORKED_MPI_ARG = "--forked-mpi"
 VERBOSE_MPI_ARG = "--verbose-mpi"
+
 IS_FORKED_MPI_ARG = "--is-forked-by-main-pytest"
 
 
@@ -123,20 +121,10 @@ def report_process_crash(item, result):
     return rep
 
 
-class MPIPlugin(object):
+class MPIPlugin:
     """
     pytest plugin to assist with testing MPI-using code
     """
-
-    _is_testing_mpi = False
-
-    def _testing_mpi(self, config):
-        """
-        Return if we're testing with MPI or not.
-        """
-        with_mpi = config.getoption(WITH_MPI_ARG)
-        only_mpi = config.getoption(ONLY_MPI_ARG)
-        return with_mpi or only_mpi
 
     def _add_markers(self, item):
         """
@@ -150,11 +138,10 @@ class MPIPlugin(object):
         """
         Hook setting config object (always called at least once)
         """
-        self._is_testing_mpi = self._testing_mpi(config)
         self._is_forked_mpi_environment = config.getoption(IS_FORKED_MPI_ARG)
         self._verbose_mpi_info = config.getoption(VERBOSE_MPI_ARG)
 
-        if self._is_testing_mpi and not self._is_forked_mpi_environment:
+        if not self._is_forked_mpi_environment:
             for env in MPI_ENV_HINTS:
                 if os.getenv(env):
                     pytest.exit(
@@ -204,29 +191,16 @@ class MPIPlugin(object):
         """
         Skip tests depending on what options are chosen
         """
-        with_mpi = config.getoption(WITH_MPI_ARG)
-        only_mpi = config.getoption(ONLY_MPI_ARG)
 
         for item in items:
-            if with_mpi:
-                self._add_markers(item)
-            elif only_mpi and MPIMarkerEnum.mpi not in item.keywords:
-                item.add_marker(
-                    pytest.mark.skip(reason="test does not use mpi")
-                )
-            elif not (with_mpi or only_mpi) and (
-                    MPIMarkerEnum.mpi in item.keywords
-            ):
-                item.add_marker(
-                    pytest.mark.skip(reason="need --with-mpi option to run")
-                )
+            self._add_markers(item)
 
     def pytest_terminal_summary(self, terminalreporter, exitstatus, *args):
         """
         Hook for printing MPI info at the end of the run
         """
         # pylint: disable=unused-argument
-        if self._is_testing_mpi and self._verbose_mpi_info:
+        if self._verbose_mpi_info:
             terminalreporter.section("MPI Information")
             try:
                 from mpi4py import MPI, rc, get_config
@@ -261,31 +235,28 @@ class MPIPlugin(object):
         """
         Hook for doing additional MPI-related checks on mpi marked tests
         """
-        if self._testing_mpi(item.config):
-            for mark in item.iter_markers(name="mpi"):
-                if mark.args:
-                    raise ValueError("mpi mark does not take positional args")
+        for mark in item.iter_markers(name="mpi"):
+            if mark.args:
+                raise ValueError("mpi mark does not take positional args")
 
-                # in our outer pytest run, we do not need to do any further checks
-                if not self._is_forked_mpi_environment:
-                    continue
+            # in our outer pytest run, we do not need to do any further checks
+            if not self._is_forked_mpi_environment:
+                continue
 
-                # check whether we have the correct number of cores
-                try:
-                    from mpi4py import MPI
-                except ImportError:
-                    pytest.fail("MPI tests require that mpi4py be installed")
+            # check whether we have the correct number of cores
+            try:
+                from mpi4py import MPI
+            except ImportError:
+                pytest.fail("MPI tests require that mpi4py be installed")
 
-                # TODO: remove this?
+            # TODO: remove this? (we fork with the required number of tests anyway!)
 
-                comm = MPI.COMM_WORLD
-                min_size = mark.kwargs.get('min_size')
-                if min_size is not None and comm.size < min_size:
-                    pytest.skip(
-                        "Test requires {} MPI processes, only {} MPI "
-                        "processes specified, skipping "
-                        "test".format(min_size, comm.size)
-                    )
+            comm = MPI.COMM_WORLD
+            min_size = mark.kwargs.get('min_size')
+            if min_size is not None and comm.size < min_size:
+                pytest.skip(
+                    f"Test requires {min_size} MPI processes, only {comm.size} MPI processes specified, skipping test"
+                )
 
     @pytest.hookimpl(trylast=True)
     def pytest_sessionstart(self, session):
@@ -328,7 +299,6 @@ class MPIPlugin(object):
             self._mpirun_exe, "-n", str(mpi_ranks),
             sys.executable, "-m", "pytest", "--debug", IS_FORKED_MPI_ARG,
             # "--no-header",
-            "--with-mpi",
             item.nodeid
         ]
 
@@ -482,14 +452,7 @@ def pytest_addoption(parser):
     Add pytest-mpi options to pytest cli
     """
     group = parser.getgroup("mpi", description="support for MPI-enabled code")
-    group.addoption(
-        WITH_MPI_ARG, action="store_true", default=False,
-        help="Run MPI tests, this should be paired with mpirun."
-    )
-    group.addoption(
-        ONLY_MPI_ARG, action="store_true", default=False,
-        help="Run *only* MPI tests, this should be paired with mpirun."
-    )
+    # TODO: hide behind a magic environment flag
     group.addoption(
         IS_FORKED_MPI_ARG, action="store_true", default=False,
         help="Whether we are running in an already forked environment. INTERNAL USE ONLY!."

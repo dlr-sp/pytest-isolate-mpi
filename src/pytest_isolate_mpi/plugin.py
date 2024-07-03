@@ -323,6 +323,7 @@ class MPIPlugin:
             if report.location is not None:
                 fspath, lineno, domain = report.location
                 report.location = fspath, lineno, f'{domain}[rank={comm.rank}]'
+                report.nodeid = f'{report.nodeid}[rank={comm.rank}]'
             setattr(report, 'rank', comm.rank)
         with open(os.path.join(os.environ['PYTEST_MPI_REPORTS_PATH'], f'{comm.rank}'), mode='wb') as f:
             pickle.dump(reports, f)
@@ -404,21 +405,8 @@ class MPIPlugin:
     pytest.hookimpl
     def pytest_terminal_summary(self, terminalreporter, exitstatus, config):  # pylint: disable=unused-argument
         """Hook for printing MPI info at the end of the run"""
-        # Patch nodeids to have rank info in short test summary. Sadly, there appears no way to revert that.
-        for rep in self._walk_terminalreporter_reports(terminalreporter):
-            rank = getattr(rep, 'rank', None)
-            if rank is None:
-                continue
-            rep.nodeid = f'{rep.nodeid}[rank={rank}]'
         if self._verbose_mpi_info:
             self._report_mpi_information(terminalreporter)
-
-    def _walk_terminalreporter_reports(self, terminalreporter):
-        for stat in terminalreporter.stats.values():
-            if isinstance(stat, list):
-                for rep in stat:
-                    if isinstance(rep, TestReport):
-                        yield rep
 
     def _report_mpi_information(self, terminalreporter):
         terminalreporter.section("MPI Information")

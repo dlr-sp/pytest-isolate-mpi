@@ -21,7 +21,7 @@ def test_number_of_processes_matches_ranks(mpi_ranks):
 
 
 @pytest.mark.mpi(ranks=[1, 3])
-# TODO add timeout mark?
+@pytest.mark.mpi_timeout(timeout=5, unit='s')
 def test_timeout(mpi_ranks):
     rank = MPI.COMM_WORLD.Get_rank()
     for _ in range(10):

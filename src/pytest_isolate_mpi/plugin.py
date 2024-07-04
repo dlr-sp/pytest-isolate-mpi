@@ -32,6 +32,11 @@ VERBOSE_MPI_ARG = "--verbose-mpi"
 IS_FORKED_MPI_ARG = "--is-forked-by-main-pytest"
 ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN = "PYTEST_ISOLATE_MPI_IS_FORKED"
 
+TIME_UNIT_CONVERSION = {
+    's': lambda timeout: timeout,
+    'm': lambda timeout: timeout * 60,
+    'h': lambda timeout: timeout * 3600,
+}
 
 
 # list of env variables copied from HPX
@@ -113,6 +118,7 @@ class MPIMarkerEnum(str, enum.Enum):
     mpi_skip = "mpi_skip"
     mpi_xfail = "mpi_xfail"
     mpi_break = "mpi_break"
+    mpi_timeout = "mpi_timeout"
 
 
 MPI_MARKERS = {
@@ -335,6 +341,16 @@ class MPIPlugin:
             if fixture == "mpi_ranks" and "mpi_ranks" in item.callspec.params:
                 mpi_ranks = item.callspec.params["mpi_ranks"]
 
+        timeout = None
+        timeout_in = ("NaN", "N/A")
+        for mark in item.iter_markers(name="mpi_timeout"):
+            if mark.args:
+                raise ValueError("mpi mark does not take positional args")
+            unit = mark.kwargs.get("unit", "s")
+            timeout = mark.kwargs.get("timeout")
+            timeout_in = (unit, timeout)
+            timeout = TIME_UNIT_CONVERSION[unit](timeout)
+
         cmd = self._mpi_configuration.extend_command_for_parallel_execution(
             cmd=[sys.executable, "-m", "mpi4py", "-m", "pytest", "--debug", "-s", item.nodeid],
             ranks=mpi_ranks,
@@ -362,9 +378,15 @@ class MPIPlugin:
 
             try:
                 subprocess.check_call(
-                    cmd, env=run_env, universal_newlines=True, stdout=sys.stdout, stderr=sys.stderr, timeout=5
+                    cmd, env=run_env, universal_newlines=True, stdout=sys.stdout, stderr=sys.stderr, timeout=timeout
                 )
                 was_test_successful = True
+            except subprocess.TimeoutExpired:
+                did_test_suite_run_through = False
+                print(
+                    f"Timeout occurred for {item.nodeid}: exceeded run time {timeout_in[1]}{timeout_in[0]}",
+                    file=sys.stderr
+                )
             except subprocess.CalledProcessError as e:
                 was_test_successful = False
                 # TODO: extend by all known return codes of pytest
@@ -521,6 +543,9 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers", "mpi_xfail: Tests that fail when run under MPI/mpirun"
+    )
+    config.addinivalue_line(
+        "markers", "mpi_timeout: Add a timeout to the test execution, units: [(s), m, h]"
     )
     config.pluginmanager.register(MPIPlugin())
 

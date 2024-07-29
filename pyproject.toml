@@ -6,17 +6,33 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pytest-isolate-mpi"
 description = ''
-readme = "README.md"
+readme = "README.rst"
 requires-python = ">=3.7"
-license = {file = "LICENSE.md"}
+license = {file = "LICENSE"}
 version = "0.1.0"
 keywords = []
 authors = [
   { name = "gilfree", email = "gilfree@users.noreply.github.com" },
 ]
+classifiers = [
+  "Development Status :: 2 - Alpha",
+  "Programming Language :: Python",
+  "Framework :: Pytest",
+]
 
-[project.entry-points.pytest11]
-pytest_isolate_mpi = "pytest_isolate_mpi.plugin"
+
+# FIXME: Update these ofter OSS release
+# [project.urls]
+# Homepage = "https://example.com"
+# Documentation = "https://readthedocs.org"
+# Repository = "https://github.com/me/spam.git"
+# "Bug Tracker" = "https://github.com/me/spam/issues"
+# Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+
+
+# FIXME: Enable this after setup.py elimination or remove
+# [project.entry-points.pytest11]
+# pytest_isolate_mpi = "pytest_isolate_mpi.plugin"
 
 
 [tool.black]

@@ -131,23 +131,6 @@ MPI_MARKERS = {
 }
 
 
-# FIXME: does this even work? the py import looks very iffy
-# copied from xdist remote
-def serialize_report(rep):
-    import py
-
-    d = rep.__dict__.copy()
-    if hasattr(rep.longrepr, "toterminal"):
-        d["longrepr"] = str(rep.longrepr)
-    else:
-        d["longrepr"] = rep.longrepr
-    for name in d:
-        if isinstance(d[name], py.path.local):
-            d[name] = str(d[name])
-        elif name == "result":
-            d[name] = None  # for now
-    return d
-
 
 # copied from pytest-forked
 def report_process_crash(item, result):

@@ -45,3 +45,6 @@ ENV/
 
 # Backup files
 *~
+
+# Pytest debug log
+pytestdebug.log

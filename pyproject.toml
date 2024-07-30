@@ -1,23 +1,43 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 
 [project]
 name = "pytest-isolate-mpi"
-description = ''
+description = "pytest-isolate-mpi allows for MPI-parallel tests being executed in a segfault and MPI_Abort safe manner"
 readme = "README.rst"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 license = {file = "LICENSE"}
-version = "0.1.0"
+dynamic = ["version"]
 keywords = []
 authors = [
-  { name = "gilfree", email = "gilfree@users.noreply.github.com" },
+  { name = "Sebastian Gottfried", email = "sebastian.gottfried@dlr.de" },
+  { name = "Jordan Lavialle"},
+  { name = "Immo Huismann", email = "immo.huismann@dlr.de" },
 ]
 classifiers = [
   "Development Status :: 2 - Alpha",
   "Programming Language :: Python",
   "Framework :: Pytest",
+]
+dependencies = [
+    "pytest >= 5",
+    "mpi4py",
+]
+
+
+[project.optional-dependencies]
+dev = [
+    "check-manifest",
+    "Sphinx<7",
+    "sphinx-rtd-theme<2",
+    "docutils<0.19",
+    "pylint",
+    "pytest-cov",
+    "wheel",
+    "numpy",
+    "black",
 ]
 
 
@@ -30,9 +50,11 @@ classifiers = [
 # Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
 
 
-# FIXME: Enable this after setup.py elimination or remove
-# [project.entry-points.pytest11]
-# pytest_isolate_mpi = "pytest_isolate_mpi.plugin"
+[project.entry-points.pytest11]
+pytest_isolate_mpi = "pytest_isolate_mpi.plugin"
+
+
+[tool.setuptools_scm]
 
 
 [tool.black]
@@ -40,8 +62,24 @@ target_version = ["py38"]
 line-length = 120
 
 
-[tool.pylint.format]
-max-line-length = 120
-
 [tool.pylint.MASTER]
+max-line-length = 120
 extension-pkg-whitelist = "mpi4py.MPI"
+recursive = true
+ignore = ["venv", "build", "dist"]
+disable = [
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "missing-module-docstring",
+]
+good-names-rgxs = "^[_a-z][_a-z0-9]?$"
+
+
+[tool.distutils.bdist_wheel]
+universal = true
+
+
+[tool.check-manifest]
+ignore = [
+    ".gitlab-ci.yml"
+]

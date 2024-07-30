@@ -1,6 +1,5 @@
 from mpi4py import MPI
 import pytest
-import pytest_isolate_mpi
 import time
 
 

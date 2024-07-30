@@ -24,9 +24,6 @@ import pytest
 from _pytest import runner
 from _pytest.reports import TestReport
 
-from . import _version
-__version__ = _version.get_versions()['version']
-
 
 VERBOSE_MPI_ARG = "--verbose-mpi"
 IS_FORKED_MPI_ARG = "--is-forked-by-main-pytest"

@@ -3,6 +3,7 @@ Support for testing python code with MPI and pytest
 """
 from __future__ import annotations
 
+import argparse
 import copy
 import dataclasses
 import subprocess
@@ -129,6 +130,22 @@ MPI_MARKERS = {
         reason="test fails under mpi"
     ),
 }
+
+
+def assemble_sub_pytest_cmd(option: argparse.Namespace, nodeid: str):
+    cmd = [
+        sys.executable,
+        "-m", "mpi4py",
+        "-m", "pytest",
+        "--capture", option.capture
+    ]
+    if option.debug:
+        cmd += ["--debug"]
+    if option.verbose:
+        cmd += [f"-{option.verbose * 'v'}"]
+    # TODO: to be continued, go through `pytest --help` and look for relevant options to pass on
+    cmd += [nodeid]
+    return cmd
 
 
 
@@ -332,7 +349,7 @@ class MPIPlugin:
             timeout = TIME_UNIT_CONVERSION[unit](timeout)
 
         cmd = self._mpi_configuration.extend_command_for_parallel_execution(
-            cmd=[sys.executable, "-m", "mpi4py", "-m", "pytest", "--debug", "-s", item.nodeid],
+            cmd=assemble_sub_pytest_cmd(self._session.config.option, item.nodeid),
             ranks=mpi_ranks,
             env_mod={},
         )
@@ -349,7 +366,7 @@ class MPIPlugin:
         reports = []
 
         with TemporaryDirectory() as tmpdir:
-            run_env = copy.deepcopy(os.environ)
+            run_env = copy.copy(os.environ)
             run_env[ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN] = "1"
             run_env['PYTEST_MPI_REPORTS_PATH'] = tmpdir
 
@@ -357,8 +374,8 @@ class MPIPlugin:
             was_test_successful = False
 
             try:
-                subprocess.check_call(
-                    cmd, env=run_env, universal_newlines=True, stdout=sys.stdout, stderr=sys.stderr, timeout=timeout
+                subprocess.run(
+                    cmd, env=run_env, universal_newlines=True, timeout=timeout, check=True, capture_output=True,
                 )
                 was_test_successful = True
             except subprocess.TimeoutExpired:

@@ -7,6 +7,15 @@ import pytest
 
 
 @pytest.fixture
+def comm():
+    try:
+        from mpi4py import MPI
+    except ImportError:
+        pytest.fail("mpi4py needs to be installed to run this test")
+    return MPI.COMM_WORLD
+
+
+@pytest.fixture
 def mpi_file_name(tmpdir, request):
     """
     Provides a temporary file name which can be used under MPI from all MPI

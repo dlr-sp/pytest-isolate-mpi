@@ -22,6 +22,7 @@ import pytest
 from _pytest import runner
 from _pytest.reports import TestReport
 
+from ._fixtures import comm           # pylint: disable=unused-import
 from ._fixtures import mpi_file_name  # pylint: disable=unused-import
 from ._fixtures import mpi_tmpdir     # pylint: disable=unused-import
 from ._fixtures import mpi_tmp_path   # pylint: disable=unused-import

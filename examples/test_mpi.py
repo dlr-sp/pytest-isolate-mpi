@@ -1,37 +1,59 @@
-from mpi4py import MPI
+import os
+from pathlib import Path
+
 import pytest
 import time
 
 
-@pytest.mark.mpi(ranks=[2])
+@pytest.mark.mpi(ranks=2)
+def test_pass(mpi_ranks):
+    """Simple passing test."""
+    assert True
+
+
+@pytest.mark.mpi(ranks=2)
 def test_fail(mpi_ranks):
-    """Failing test -- to check whether XFAIL works.
-    TODO: use xfail and test whether it works
-    """
+    """Simple failing test."""
     assert False
 
 
+@pytest.mark.mpi(ranks=2)
+@pytest.mark.xfail
+def test_xfail(mpi_ranks):
+    """Simple xfailing test."""
+    assert False
+
+
+@pytest.mark.mpi(ranks=2)
+def test_one_failing_rank(mpi_ranks, comm):
+    assert comm.rank != 0
+
+
+@pytest.mark.mpi(ranks=2)
+def test_one_aborting_rank(mpi_ranks, comm):
+    if comm.rank == 0:
+        os._exit(127)
+
+
 @pytest.mark.mpi(ranks=[1, 2, 3])
-def test_number_of_processes_matches_ranks(mpi_ranks):
+def test_number_of_processes_matches_ranks(mpi_ranks, comm):
     """Simple test that checks whether we run on multiple processes."""
-    print(mpi_ranks)
-    num_ranks = MPI.COMM_WORLD.Get_size()
-    assert num_ranks == mpi_ranks
+    assert comm.size == mpi_ranks
 
 
 @pytest.mark.mpi(ranks=[1, 3])
 @pytest.mark.mpi_timeout(timeout=5, unit='s')
-def test_timeout(mpi_ranks):
-    rank = MPI.COMM_WORLD.Get_rank()
+def test_timeout(mpi_ranks, comm):
+    rank = comm.rank
     for _ in range(10):
         print(f"Timeout: sleeping (1) on rank `{rank}`")
         time.sleep(1)
 
 
 @pytest.mark.mpi(ranks=[2, 3])
-def test_abort(mpi_ranks):
+def test_timeout(mpi_ranks, comm):
     time.sleep(1)
-    rank = MPI.COMM_WORLD.Get_rank()
+    rank = comm.rank
     assert rank != 1
 
     while True:
@@ -47,3 +69,13 @@ def test_skip(mpi_ranks):
     environment."""
     # This will always fail in case of us actually executing the test, such that we can test whether it works
     assert False
+
+
+def test_mpi_tmp_path(mpi_tmp_path):
+    assert isinstance(mpi_tmp_path, Path) and mpi_tmp_path.exists()
+
+def test_no_mpi():
+    """Simple test checking non-isolated non-MPI test remain possible."""
+    assert True
+
+

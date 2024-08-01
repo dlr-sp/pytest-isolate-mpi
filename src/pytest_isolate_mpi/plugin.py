@@ -302,7 +302,10 @@ class MPIPlugin:
         if self._is_forked_mpi_environment:
             reports = self._mpi_runtestprococol_inner(item)
         else:
-            reports = self._mpi_runtestprotocol(item)
+            if "mpi_ranks" in item.fixturenames:
+                reports = self._mpi_runtestprotocol(item)
+            else:
+                reports = runner.runtestprotocol(item, log=False)
 
         for rep in reports:
             ihook.pytest_runtest_logreport(report=rep)

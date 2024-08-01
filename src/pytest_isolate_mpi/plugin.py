@@ -285,14 +285,10 @@ class MPIPlugin:
 
     @pytest.hookimpl(trylast=True)
     def pytest_sessionstart(self, session):
-        # TODO: only do this if we are set to very verbose
-        print(f'starting test session: {session}')
         self._session = session
 
     @pytest.hookimpl
     def pytest_sessionfinish(self, session):
-        # TODO: only do this if we are set to very verbose
-        print(f'terminating test session: {session}')
         self._session = None
 
     @pytest.hookimpl(tryfirst=True)
@@ -304,7 +300,7 @@ class MPIPlugin:
         if self._is_forked_mpi_environment:
             reports = self._mpi_runtestprococol_inner(item)
         else:
-            reports = self.mpi_runtestprotocol(item)
+            reports = self._mpi_runtestprotocol(item)
 
         for rep in reports:
             ihook.pytest_runtest_logreport(report=rep)
@@ -332,7 +328,7 @@ class MPIPlugin:
             pickle.dump(reports, f)
         return reports
 
-    def mpi_runtestprotocol(self, item):
+    def _mpi_runtestprotocol(self, item):
         mpi_ranks = 1
         for fixture in item.fixturenames:
             if fixture == "mpi_ranks" and "mpi_ranks" in item.callspec.params:
@@ -357,71 +353,53 @@ class MPIPlugin:
         if self._verbose_mpi_info:
             print(f"dispatching command: {cmd}")
 
-        out_fd, out_path = mkstemp()
-        out = os.fdopen(out_fd, 'w')
-        # out = sys.stdout
-
-        err_fd, err_path = mkstemp()
-        err = os.fdopen(err_fd, 'w')
         reports = []
+        mpi_proc_result = None
+        timeout_expired = False
 
         with TemporaryDirectory() as tmpdir:
             run_env = copy.copy(os.environ)
             run_env[ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN] = "1"
             run_env['PYTEST_MPI_REPORTS_PATH'] = tmpdir
 
-            did_test_suite_run_through = True
-            was_test_successful = False
-
             try:
-                subprocess.run(
-                    cmd, env=run_env, universal_newlines=True, timeout=timeout, check=True, capture_output=True,
+                # FIXME: disable capturing if -s is passed to pytest
+                mpi_proc_result = subprocess.run(
+                    cmd, env=run_env, universal_newlines=True, timeout=timeout, capture_output=True,
                 )
-                was_test_successful = True
             except subprocess.TimeoutExpired:
-                did_test_suite_run_through = False
-                print(
-                    f"Timeout occurred for {item.nodeid}: exceeded run time {timeout_in[1]}{timeout_in[0]}",
-                    file=sys.stderr
-                )
-            except subprocess.CalledProcessError as e:
-                was_test_successful = False
-                # TODO: extend by all known return codes of pytest
-                did_test_suite_run_through = e.returncode == 1
-                if e.returncode == 1:
-                    did_test_suite_run_through = True
-                else:
-                    did_test_suite_run_through = False
-            finally:
-                sys.stdout.flush()
-                sys.stderr.flush()
+                timeout_expired = True
 
-            if did_test_suite_run_through:
-                for i in range(mpi_ranks):
+            found_all_reports = True
+            for i in range(mpi_ranks):
+                try:
                     with open(os.path.join(tmpdir, f'{i}'), mode='rb') as f:
                         reports += pickle.load(f)
+                except FileNotFoundError:
+                    found_all_reports = False
 
-        with open(err_path, 'rb') as f:
-            err_msg = f.read()
-            print('err_msg:', err_msg)
-
-        err.close()
-        os.remove(err_path)
-
-        if not did_test_suite_run_through:
-            return [
-                runner.TestReport(
+            if not found_all_reports:
+                if timeout_expired:
+                    msg = f"Timeout occurred for {item.nodeid}: exceeded run time {timeout_in[1]}{timeout_in[0]}.",
+                else:
+                    msg = f"At least one MPI process has exited prematurely."
+                rep = TestReport(
                     nodeid=item.nodeid,
                     location=item.location,
-                    outcome="passed" if was_test_successful else "failed",  # TODO: improve this
-                    when="call",  # TODO: improve this
-                    keywords=[],
-                    longrepr=item.nodeid
+                    outcome="failed",
+                    when="call",
+                    keywords={},
+                    longrepr=msg
                 )
-            ]
+                if mpi_proc_result is not None:
+                    if mpi_proc_result.stdout is not None:
+                        rep.sections.append(("Captured stdout", mpi_proc_result.stdout))
+                    if mpi_proc_result.stderr is not None:
+                        rep.sections.append(("Captured stderr", mpi_proc_result.stderr))
+                reports.append(rep)
+
         return reports
 
-    pytest.hookimpl
     def pytest_terminal_summary(self, terminalreporter, exitstatus, config):  # pylint: disable=unused-argument
         """Hook for printing MPI info at the end of the run"""
         if self._verbose_mpi_info:

@@ -9,6 +9,7 @@ import dataclasses
 import subprocess
 import enum
 import pickle
+import shutil
 import sys
 import warnings
 from typing import Any, Union
@@ -96,12 +97,10 @@ class MPIConfiguration:
 
     @staticmethod
     def __get_mpirun_executable() -> str:
-        from distutils import spawn
-
         mpirun = ""
-        if spawn.find_executable("mpirun") is not None:
+        if shutil.which("mpirun") is not None:
             mpirun = "mpirun"
-        elif spawn.find_executable("mpiexec") is not None:
+        elif shutil.which("mpiexec") is not None:
             mpirun = "mpiexec"
 
         return mpirun

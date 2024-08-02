@@ -10,6 +10,8 @@ import pytest
     ("test_number_of_processes_matches_ranks", {"passed": 6}, []),
     ("test_timeout", {"failed": 1}, [r"Timeout occurred for test_mpi.py::test_timeout\[2\]: "
                                      r"exceeded run time limit of 5s\."]),
+    ("test_mpi_deadlock", {"failed": 1, "passed": 1}, [r"Timeout occurred for test_mpi.py::test_mpi_deadlock\[2\]: "
+                                                       r"exceeded run time limit of 10s\."]),
     ("test_skip", {"skipped": 6}, []),
     ("test_mpi_tmp_path", {"passed": 2}, []),
     ("test_no_mpi", {"passed": 1}, []),

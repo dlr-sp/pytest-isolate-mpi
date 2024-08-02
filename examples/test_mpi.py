@@ -54,6 +54,13 @@ def test_timeout(mpi_ranks, comm):
         time.sleep(1)
 
 
+@pytest.mark.mpi(ranks=2)
+@pytest.mark.mpi_timeout(timeout=10, unit='s')
+def test_mpi_deadlock(mpi_ranks, comm):
+    if comm.rank == 0:
+        comm.Barrier()
+
+
 @pytest.mark.mpi(ranks=[1, 2, 3])
 @pytest.mark.skip(reason="Testing whether skipping works")
 def test_skip(mpi_ranks):

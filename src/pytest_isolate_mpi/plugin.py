@@ -23,32 +23,19 @@ import pytest
 from _pytest import runner
 from _pytest.reports import TestReport
 
+from ._constants import ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN
+from ._constants import IS_FORKED_MPI_ARG
+from ._constants import MPI_ENV_HINTS
+from ._constants import MPI_MARKERS
+from ._constants import TIME_UNIT_CONVERSION
+from ._constants import VERBOSE_MPI_ARG
 from ._fixtures import comm           # pylint: disable=unused-import
 from ._fixtures import mpi_file_name  # pylint: disable=unused-import
 from ._fixtures import mpi_tmpdir     # pylint: disable=unused-import
 from ._fixtures import mpi_tmp_path   # pylint: disable=unused-import
 
 
-VERBOSE_MPI_ARG = "--verbose-mpi"
-IS_FORKED_MPI_ARG = "--is-forked-by-main-pytest"
-ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN = "PYTEST_ISOLATE_MPI_IS_FORKED"
-
-TIME_UNIT_CONVERSION = {
-    's': lambda timeout: timeout,
-    'm': lambda timeout: timeout * 60,
-    'h': lambda timeout: timeout * 3600,
-}
-
-
 # list of env variables copied from HPX
-MPI_ENV_HINTS = [
-    "OMPI_COMM_WORLD_SIZE",
-    "MV2_COMM_WORLD_RANK",
-    "PMI_RANK",
-    "ALPS_APP_PE",
-    "PMIX_RANK",
-    "PALS_NODEID",
-]
 
 
 @dataclasses.dataclass(init=False)
@@ -104,33 +91,6 @@ class MPIConfiguration:
             mpirun = "mpiexec"
 
         return mpirun
-
-@enum.unique
-class MPIMarkerEnum(str, enum.Enum):
-    """
-    Enum containing all the markers used by pytest-mpi
-
-    FIXME: Once we are on Python 3.11, use StrEnum
-    """
-
-    mpi = "mpi"
-    mpi_skip = "mpi_skip"
-    mpi_xfail = "mpi_xfail"
-    mpi_break = "mpi_break"
-    mpi_timeout = "mpi_timeout"
-
-
-MPI_MARKERS = {
-    MPIMarkerEnum.mpi_skip: pytest.mark.skip(
-        reason="test does not work under mpi"
-    ),
-    MPIMarkerEnum.mpi_break: pytest.mark.skip(
-        reason="test does not work under mpi"
-    ),
-    MPIMarkerEnum.mpi_xfail: pytest.mark.xfail(
-        reason="test fails under mpi"
-    ),
-}
 
 
 def assemble_sub_pytest_cmd(option: argparse.Namespace, nodeid: str):
@@ -384,7 +344,8 @@ class MPIPlugin:
 
             if not found_all_reports:
                 if timeout_expired:
-                    msg = f"Timeout occurred for {item.nodeid}: exceeded run time {timeout_in[1]}{timeout_in[0]}.",
+                    msg = f"Timeout occurred for {item.nodeid}: exceeded run time limit of " \
+                          f"{timeout_in[1]}{timeout_in[0]}."
                 else:
                     msg = f"At least one MPI process has exited prematurely."
                 rep = TestReport(

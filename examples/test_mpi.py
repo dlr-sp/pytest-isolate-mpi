@@ -1,8 +1,12 @@
 import os
 from pathlib import Path
 
+
 import pytest
 import time
+
+
+from pytest_isolate_mpi._constants import ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN
 
 
 @pytest.mark.mpi(ranks=2)
@@ -41,23 +45,12 @@ def test_number_of_processes_matches_ranks(mpi_ranks, comm):
     assert comm.size == mpi_ranks
 
 
-@pytest.mark.mpi(ranks=[1, 3])
+@pytest.mark.mpi(ranks=2)
 @pytest.mark.mpi_timeout(timeout=5, unit='s')
 def test_timeout(mpi_ranks, comm):
     rank = comm.rank
     for _ in range(10):
         print(f"Timeout: sleeping (1) on rank `{rank}`")
-        time.sleep(1)
-
-
-@pytest.mark.mpi(ranks=[2, 3])
-def test_timeout(mpi_ranks, comm):
-    time.sleep(1)
-    rank = comm.rank
-    assert rank != 1
-
-    while True:
-        print(f"Sleep(1) on rank `{rank}`")
         time.sleep(1)
 
 
@@ -71,11 +64,11 @@ def test_skip(mpi_ranks):
     assert False
 
 
-def test_mpi_tmp_path(mpi_tmp_path):
+@pytest.mark.mpi(ranks=2)
+def test_mpi_tmp_path(mpi_ranks, mpi_tmp_path):
     assert isinstance(mpi_tmp_path, Path) and mpi_tmp_path.exists()
+
 
 def test_no_mpi():
     """Simple test checking non-isolated non-MPI test remain possible."""
-    assert True
-
-
+    assert ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN not in os.environ

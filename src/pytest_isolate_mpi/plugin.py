@@ -219,13 +219,12 @@ class MPIPlugin:
 
         timeout = None
         timeout_in = ("NaN", "N/A")
-        for mark in item.iter_markers(name="mpi_timeout"):
-            if mark.args:
-                raise ValueError("mpi mark does not take positional args")
-            unit = mark.kwargs.get("unit", "s")
-            timeout = mark.kwargs.get("timeout")
-            timeout_in = (unit, timeout)
-            timeout = TIME_UNIT_CONVERSION[unit](timeout)
+        for mark in item.iter_markers(name="mpi"):
+            timeout = mark.kwargs.get("timeout", None)
+            if timeout is not None:
+                unit = mark.kwargs.get("unit", "s")
+                timeout_in = (unit, timeout)
+                timeout = TIME_UNIT_CONVERSION[unit](timeout)
 
         cmd = self._mpi_configuration.extend_command_for_parallel_execution(
             cmd=assemble_sub_pytest_cmd(self._session.config.option, item.nodeid),
@@ -321,7 +320,6 @@ def pytest_configure(config):
     Add pytest-mpi to pytest (see pytest docs for more info)
     """
     config.addinivalue_line("markers", f"{MPIMarkerEnum.MPI.value}: Tests that require being run with MPI/mpirun")
-    config.addinivalue_line("markers", "mpi_timeout: Add a timeout to the test execution, units: [(s), m, h]")
     config.pluginmanager.register(MPIPlugin())
 
 

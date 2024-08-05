@@ -1,6 +1,7 @@
 """
 Support for testing python code with MPI and pytest
 """
+
 from __future__ import annotations
 
 import argparse
@@ -28,10 +29,10 @@ from ._constants import MPI_ENV_HINTS
 from ._constants import MPI_MARKERS
 from ._constants import TIME_UNIT_CONVERSION
 from ._constants import VERBOSE_MPI_ARG
-from ._fixtures import comm           # pylint: disable=unused-import
+from ._fixtures import comm  # pylint: disable=unused-import
 from ._fixtures import mpi_file_name  # pylint: disable=unused-import
-from ._fixtures import mpi_tmpdir     # pylint: disable=unused-import
-from ._fixtures import mpi_tmp_path   # pylint: disable=unused-import
+from ._fixtures import mpi_tmpdir  # pylint: disable=unused-import
+from ._fixtures import mpi_tmp_path  # pylint: disable=unused-import
 
 
 # list of env variables copied from HPX
@@ -40,6 +41,7 @@ from ._fixtures import mpi_tmp_path   # pylint: disable=unused-import
 @dataclasses.dataclass(init=False)
 class MPIConfiguration:
     """Configuration defining how to execute an MPI-parallel subprocess"""
+
     mpirun_executable: str
     flag_for_processes: str
     flag_for_passing_environment_variables: str
@@ -51,9 +53,7 @@ class MPIConfiguration:
         self.flag_for_passing_environment_variables = "-x"
 
         if not self.mpirun_executable:
-            pytest.exit(
-                "failed to find mpirun/mpiexec required for starting MPI tests",
-                pytest.ExitCode.USAGE_ERROR)
+            pytest.exit("failed to find mpirun/mpiexec required for starting MPI tests", pytest.ExitCode.USAGE_ERROR)
 
     def extend_command_for_parallel_execution(
         self, cmd: list[str], ranks: int, env_mod: dict[str, str | int]
@@ -62,13 +62,15 @@ class MPIConfiguration:
         given by env.
 
         """
-        parallel_cmd = [
-            self.mpirun_executable,
-            self.flag_for_processes,
-            str(ranks),
-        ] \
-        + self.get_arguments_for_passing_environment_variables(env_mod) \
-        +  cmd
+        parallel_cmd = (
+            [
+                self.mpirun_executable,
+                self.flag_for_processes,
+                str(ranks),
+            ]
+            + self.get_arguments_for_passing_environment_variables(env_mod)
+            + cmd
+        )
 
         return parallel_cmd
 
@@ -79,7 +81,6 @@ class MPIConfiguration:
             args += [self.flag_for_passing_environment_variables, f"{name}={value}"]
 
         return args
-
 
     @staticmethod
     def __get_mpirun_executable() -> str:
@@ -93,12 +94,7 @@ class MPIConfiguration:
 
 
 def assemble_sub_pytest_cmd(option: argparse.Namespace, nodeid: str):
-    cmd = [
-        sys.executable,
-        "-m", "mpi4py",
-        "-m", "pytest",
-        "--capture", option.capture
-    ]
+    cmd = [sys.executable, "-m", "mpi4py", "-m", "pytest", "--capture", option.capture]
     if option.debug:
         cmd += ["--debug"]
     if option.verbose:
@@ -106,7 +102,6 @@ def assemble_sub_pytest_cmd(option: argparse.Namespace, nodeid: str):
     # TODO: to be continued, go through `pytest --help` and look for relevant options to pass on
     cmd += [nodeid]
     return cmd
-
 
 
 # copied from pytest-forked
@@ -141,8 +136,7 @@ def report_process_crash(item, result):
     rep.outcome = "skipped"
     rep.wasxfail = f"reason: {xfail_marker.kwargs['reason']}; pytest-isolate-mpi reason: {info}"
     warnings.warn(
-        "pytest-forked xfail support is incomplete at the moment and may "
-        "output a misleading reason message",
+        "pytest-forked xfail support is incomplete at the moment and may " "output a misleading reason message",
         RuntimeWarning,
     )
 
@@ -171,7 +165,7 @@ class MPIPlugin:
         """
         Hook setting config object (always called at least once)
         """
-        self._is_forked_mpi_environment = bool(os.environ.get(ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN, ''))
+        self._is_forked_mpi_environment = bool(os.environ.get(ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN, ""))
         self._verbose_mpi_info = config.getoption(VERBOSE_MPI_ARG)
         self._mpi_configuration: MPIConfiguration = MPIConfiguration()
 
@@ -179,9 +173,7 @@ class MPIPlugin:
         if not self._is_forked_mpi_environment:
             for env in MPI_ENV_HINTS:
                 if os.getenv(env):
-                    pytest.exit(
-                        "forked MPI tests cannot be run in an MPI environment",
-                        pytest.ExitCode.USAGE_ERROR)
+                    pytest.exit("forked MPI tests cannot be run in an MPI environment", pytest.ExitCode.USAGE_ERROR)
 
     def pytest_generate_tests(self, metafunc):
         """Extend the marker @pytest.mark.mpi such that we have parametrization of the tests w.r.t. # ranks."""
@@ -195,16 +187,12 @@ class MPIPlugin:
                 else:
                     list_of_ranks = []
                     pytest.exit(
-                        "Range of MPI ranks must be an integer or an integer sequence",
-                        pytest.ExitCode.USAGE_ERROR
+                        "Range of MPI ranks must be an integer or an integer sequence", pytest.ExitCode.USAGE_ERROR
                     )
 
                 for rank in list_of_ranks:
                     if not isinstance(rank, int) or rank <= 0:
-                        pytest.exit(
-                            "Number of MPI ranks must be a positive integer",
-                            pytest.ExitCode.USAGE_ERROR
-                    )
+                        pytest.exit("Number of MPI ranks must be a positive integer", pytest.ExitCode.USAGE_ERROR)
 
                 metafunc.parametrize("mpi_ranks", list_of_ranks)
 
@@ -215,7 +203,6 @@ class MPIPlugin:
     #     """
     #     for item in items:
     #         self._add_markers(item)
-
 
     def pytest_runtest_setup(self, item):
         """
@@ -237,7 +224,7 @@ class MPIPlugin:
 
             # TODO: remove this? (we fork with the required number of tests anyway!)
             comm = MPI.COMM_WORLD
-            min_size = mark.kwargs.get('min_size')
+            min_size = mark.kwargs.get("min_size")
             if min_size is not None and comm.size < min_size:
                 pytest.skip(
                     f"Test requires {min_size} MPI processes, only {comm.size} MPI processes specified, skipping test"
@@ -254,8 +241,7 @@ class MPIPlugin:
     @pytest.hookimpl(tryfirst=True)
     def pytest_runtest_protocol(self, item):
         ihook = item.ihook
-        ihook.pytest_runtest_logstart(
-            nodeid=item.nodeid, location=item.location)
+        ihook.pytest_runtest_logstart(nodeid=item.nodeid, location=item.location)
 
         if self._is_forked_mpi_environment:
             reports = self._mpi_runtestprococol_inner(item)
@@ -268,8 +254,7 @@ class MPIPlugin:
         for rep in reports:
             ihook.pytest_runtest_logreport(report=rep)
 
-        ihook.pytest_runtest_logfinish(
-            nodeid=item.nodeid, location=item.location)
+        ihook.pytest_runtest_logfinish(nodeid=item.nodeid, location=item.location)
 
         return True
 
@@ -284,10 +269,10 @@ class MPIPlugin:
         for report in reports:
             if report.location is not None:
                 fspath, lineno, domain = report.location
-                report.location = fspath, lineno, f'{domain}[rank={comm.rank}]'
-                report.nodeid = f'{report.nodeid}[rank={comm.rank}]'
-            setattr(report, 'rank', comm.rank)
-        with open(os.path.join(os.environ['PYTEST_MPI_REPORTS_PATH'], f'{comm.rank}'), mode='wb') as f:
+                report.location = fspath, lineno, f"{domain}[rank={comm.rank}]"
+                report.nodeid = f"{report.nodeid}[rank={comm.rank}]"
+            setattr(report, "rank", comm.rank)
+        with open(os.path.join(os.environ["PYTEST_MPI_REPORTS_PATH"], f"{comm.rank}"), mode="wb") as f:
             pickle.dump(reports, f)
         return reports
 
@@ -323,12 +308,16 @@ class MPIPlugin:
         with TemporaryDirectory() as tmpdir:
             run_env = copy.copy(os.environ)
             run_env[ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN] = "1"
-            run_env['PYTEST_MPI_REPORTS_PATH'] = tmpdir
+            run_env["PYTEST_MPI_REPORTS_PATH"] = tmpdir
 
             try:
                 # FIXME: disable capturing if -s is passed to pytest
                 mpi_proc_result = subprocess.run(
-                    cmd, env=run_env, universal_newlines=True, timeout=timeout, capture_output=True,
+                    cmd,
+                    env=run_env,
+                    universal_newlines=True,
+                    timeout=timeout,
+                    capture_output=True,
                 )
             except subprocess.TimeoutExpired:
                 timeout_expired = True
@@ -336,24 +325,21 @@ class MPIPlugin:
             found_all_reports = True
             for i in range(mpi_ranks):
                 try:
-                    with open(os.path.join(tmpdir, f'{i}'), mode='rb') as f:
+                    with open(os.path.join(tmpdir, f"{i}"), mode="rb") as f:
                         reports += pickle.load(f)
                 except FileNotFoundError:
                     found_all_reports = False
 
             if not found_all_reports:
                 if timeout_expired:
-                    msg = f"Timeout occurred for {item.nodeid}: exceeded run time limit of " \
-                          f"{timeout_in[1]}{timeout_in[0]}."
+                    msg = (
+                        f"Timeout occurred for {item.nodeid}: exceeded run time limit of "
+                        f"{timeout_in[1]}{timeout_in[0]}."
+                    )
                 else:
                     msg = f"At least one MPI process has exited prematurely."
                 rep = TestReport(
-                    nodeid=item.nodeid,
-                    location=item.location,
-                    outcome="failed",
-                    when="call",
-                    keywords={},
-                    longrepr=msg
+                    nodeid=item.nodeid, location=item.location, outcome="failed", when="call", keywords={}, longrepr=msg
                 )
                 if mpi_proc_result is not None:
                     if mpi_proc_result.stdout is not None:
@@ -395,27 +381,15 @@ class MPIPlugin:
                 terminalreporter.write(f" {name}: {value}\n")
 
 
-
 def pytest_configure(config):
     """
     Add pytest-mpi to pytest (see pytest docs for more info)
     """
-    config.addinivalue_line(
-        "markers", "mpi: Tests that require being run with MPI/mpirun"
-    )
-    config.addinivalue_line(
-        "markers", "mpi_break: Tests that cannot run under MPI/mpirun "
-        "(deprecated)"
-    )
-    config.addinivalue_line(
-        "markers", "mpi_skip: Tests to skip when running MPI/mpirun"
-    )
-    config.addinivalue_line(
-        "markers", "mpi_xfail: Tests that fail when run under MPI/mpirun"
-    )
-    config.addinivalue_line(
-        "markers", "mpi_timeout: Add a timeout to the test execution, units: [(s), m, h]"
-    )
+    config.addinivalue_line("markers", "mpi: Tests that require being run with MPI/mpirun")
+    config.addinivalue_line("markers", "mpi_break: Tests that cannot run under MPI/mpirun " "(deprecated)")
+    config.addinivalue_line("markers", "mpi_skip: Tests to skip when running MPI/mpirun")
+    config.addinivalue_line("markers", "mpi_xfail: Tests that fail when run under MPI/mpirun")
+    config.addinivalue_line("markers", "mpi_timeout: Add a timeout to the test execution, units: [(s), m, h]")
     config.pluginmanager.register(MPIPlugin())
 
 
@@ -425,14 +399,15 @@ def pytest_addoption(parser):
     """
     group = parser.getgroup("mpi", description="support for MPI-enabled code")
     group.addoption(
-        VERBOSE_MPI_ARG, action="store_true", default=False,
-        help="Include detailed MPI information in output."
+        VERBOSE_MPI_ARG, action="store_true", default=False, help="Include detailed MPI information in output."
     )
 
     # Argument for explicitly running a forked session.
     # This requires two interactions to limit users from using it, aka: Explicit intent to use it is required.
     if ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN in os.environ:
         group.addoption(
-            IS_FORKED_MPI_ARG, action="store_true", default=False,
-            help="Whether we are running in an already forked environment. INTERNAL USE ONLY!."
+            IS_FORKED_MPI_ARG,
+            action="store_true",
+            default=False,
+            help="Whether we are running in an already forked environment. INTERNAL USE ONLY!.",
         )

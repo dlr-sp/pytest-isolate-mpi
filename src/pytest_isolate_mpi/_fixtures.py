@@ -34,7 +34,7 @@ def mpi_file_name(tmpdir, request):
 
     # we only want to put the file inside one tmpdir, this creates the name
     # under one process, and passes it on to the others
-    name = str(tmpdir.join(str(request.node) + '.hdf5')) if rank == 0 else None
+    name = str(tmpdir.join(str(request.node) + ".hdf5")) if rank == 0 else None
     name = comm.bcast(name, root=0)
     return name
 

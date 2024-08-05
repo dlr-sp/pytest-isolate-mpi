@@ -24,9 +24,9 @@ VERBOSE_MPI_ARG = "--verbose-mpi"
 IS_FORKED_MPI_ARG = "--is-forked-by-main-pytest"
 ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN = "PYTEST_ISOLATE_MPI_IS_FORKED"
 TIME_UNIT_CONVERSION = {
-    's': lambda timeout: timeout,
-    'm': lambda timeout: timeout * 60,
-    'h': lambda timeout: timeout * 3600,
+    "s": lambda timeout: timeout,
+    "m": lambda timeout: timeout * 60,
+    "h": lambda timeout: timeout * 3600,
 }
 
 MPI_ENV_HINTS = [
@@ -39,13 +39,7 @@ MPI_ENV_HINTS = [
 ]
 
 MPI_MARKERS = {
-    MPIMarkerEnum.mpi_skip: pytest.mark.skip(
-        reason="test does not work under mpi"
-    ),
-    MPIMarkerEnum.mpi_break: pytest.mark.skip(
-        reason="test does not work under mpi"
-    ),
-    MPIMarkerEnum.mpi_xfail: pytest.mark.xfail(
-        reason="test fails under mpi"
-    ),
+    MPIMarkerEnum.mpi_skip: pytest.mark.skip(reason="test does not work under mpi"),
+    MPIMarkerEnum.mpi_break: pytest.mark.skip(reason="test does not work under mpi"),
+    MPIMarkerEnum.mpi_xfail: pytest.mark.xfail(reason="test fails under mpi"),
 }

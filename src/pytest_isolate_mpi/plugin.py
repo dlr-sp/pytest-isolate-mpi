@@ -11,7 +11,6 @@ import subprocess
 import pickle
 import shutil
 import sys
-import warnings
 from tempfile import TemporaryDirectory
 
 import collections
@@ -25,8 +24,8 @@ from _pytest.reports import TestReport
 
 from ._constants import ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN
 from ._constants import IS_FORKED_MPI_ARG
+from ._constants import MPIMarkerEnum
 from ._constants import MPI_ENV_HINTS
-from ._constants import MPI_MARKERS
 from ._constants import TIME_UNIT_CONVERSION
 from ._constants import VERBOSE_MPI_ARG
 from ._fixtures import comm  # pylint: disable=unused-import
@@ -104,45 +103,6 @@ def assemble_sub_pytest_cmd(option: argparse.Namespace, nodeid: str):
     return cmd
 
 
-# copied from pytest-forked
-def report_process_crash(item, result):
-    from _pytest._code import getfslineno
-
-    path, lineno = getfslineno(item)
-    info = "%s:%s: running the test CRASHED with signal %d" % (
-        path,
-        lineno,
-        result.signal,
-    )
-    from _pytest import runner
-
-    # pytest >= 4.1
-    has_from_call = getattr(runner.CallInfo, "from_call", None) is not None
-    if has_from_call:
-        call = runner.CallInfo.from_call(lambda: 0 / 0, "???")
-    else:
-        call = runner.CallInfo(lambda: 0 / 0, "???")
-    call.excinfo = info
-    rep = runner.pytest_runtest_makereport(item, call)
-    if result.out:
-        rep.sections.append(("captured stdout", result.out))
-    if result.err:
-        rep.sections.append(("captured stderr", result.err))
-
-    xfail_marker = item.get_closest_marker("xfail")
-    if not xfail_marker:
-        return rep
-
-    rep.outcome = "skipped"
-    rep.wasxfail = f"reason: {xfail_marker.kwargs['reason']}; pytest-isolate-mpi reason: {info}"
-    warnings.warn(
-        "pytest-forked xfail support is incomplete at the moment and may " "output a misleading reason message",
-        RuntimeWarning,
-    )
-
-    return rep
-
-
 class MPIPlugin:
     """
     pytest plugin to assist with testing MPI-using code
@@ -153,21 +113,12 @@ class MPIPlugin:
     _mpi_configuration: MPIConfiguration = MPIConfiguration()
     _session: Session | None = None
 
-    def _add_markers(self, item):
-        """
-        Add markers to tests when run under MPI.
-        """
-        for label, marker in MPI_MARKERS.items():
-            if label in item.keywords:
-                item.add_marker(marker)
-
     def pytest_configure(self, config):
         """
         Hook setting config object (always called at least once)
         """
         self._is_forked_mpi_environment = bool(os.environ.get(ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN, ""))
         self._verbose_mpi_info = config.getoption(VERBOSE_MPI_ARG)
-        self._mpi_configuration: MPIConfiguration = MPIConfiguration()
 
         # double check whether MPI environment variables are residing in the forked env
         if not self._is_forked_mpi_environment:
@@ -196,14 +147,6 @@ class MPIPlugin:
 
                 metafunc.parametrize("mpi_ranks", list_of_ranks)
 
-    # TODO: remove the whole method?
-    # def pytest_collection_modifyitems(self, config, items):
-    #     """
-    #     Skip tests depending on what options are chosen
-    #     """
-    #     for item in items:
-    #         self._add_markers(item)
-
     def pytest_runtest_setup(self, item):
         """
         Hook for doing additional MPI-related checks on mpi marked tests
@@ -221,14 +164,6 @@ class MPIPlugin:
                 from mpi4py import MPI
             except ImportError:
                 pytest.fail("MPI tests require that mpi4py be installed")
-
-            # TODO: remove this? (we fork with the required number of tests anyway!)
-            comm = MPI.COMM_WORLD
-            min_size = mark.kwargs.get("min_size")
-            if min_size is not None and comm.size < min_size:
-                pytest.skip(
-                    f"Test requires {min_size} MPI processes, only {comm.size} MPI processes specified, skipping test"
-                )
 
     @pytest.hookimpl(trylast=True)
     def pytest_sessionstart(self, session):
@@ -385,10 +320,7 @@ def pytest_configure(config):
     """
     Add pytest-mpi to pytest (see pytest docs for more info)
     """
-    config.addinivalue_line("markers", "mpi: Tests that require being run with MPI/mpirun")
-    config.addinivalue_line("markers", "mpi_break: Tests that cannot run under MPI/mpirun " "(deprecated)")
-    config.addinivalue_line("markers", "mpi_skip: Tests to skip when running MPI/mpirun")
-    config.addinivalue_line("markers", "mpi_xfail: Tests that fail when run under MPI/mpirun")
+    config.addinivalue_line("markers", f"{MPIMarkerEnum.MPI.value}: Tests that require being run with MPI/mpirun")
     config.addinivalue_line("markers", "mpi_timeout: Add a timeout to the test execution, units: [(s), m, h]")
     config.pluginmanager.register(MPIPlugin())
 
@@ -401,13 +333,3 @@ def pytest_addoption(parser):
     group.addoption(
         VERBOSE_MPI_ARG, action="store_true", default=False, help="Include detailed MPI information in output."
     )
-
-    # Argument for explicitly running a forked session.
-    # This requires two interactions to limit users from using it, aka: Explicit intent to use it is required.
-    if ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN in os.environ:
-        group.addoption(
-            IS_FORKED_MPI_ARG,
-            action="store_true",
-            default=False,
-            help="Whether we are running in an already forked environment. INTERNAL USE ONLY!.",
-        )

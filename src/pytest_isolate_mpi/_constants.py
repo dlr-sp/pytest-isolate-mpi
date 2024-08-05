@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import enum
 
-import pytest
-
-
 @enum.unique
 class MPIMarkerEnum(str, enum.Enum):
     """
@@ -13,11 +10,7 @@ class MPIMarkerEnum(str, enum.Enum):
     FIXME: Once we are on Python 3.11, use StrEnum
     """
 
-    mpi = "mpi"
-    mpi_skip = "mpi_skip"
-    mpi_xfail = "mpi_xfail"
-    mpi_break = "mpi_break"
-    mpi_timeout = "mpi_timeout"
+    MPI = "mpi"
 
 
 VERBOSE_MPI_ARG = "--verbose-mpi"
@@ -37,9 +30,3 @@ MPI_ENV_HINTS = [
     "PMIX_RANK",
     "PALS_NODEID",
 ]
-
-MPI_MARKERS = {
-    MPIMarkerEnum.mpi_skip: pytest.mark.skip(reason="test does not work under mpi"),
-    MPIMarkerEnum.mpi_break: pytest.mark.skip(reason="test does not work under mpi"),
-    MPIMarkerEnum.mpi_xfail: pytest.mark.xfail(reason="test fails under mpi"),
-}

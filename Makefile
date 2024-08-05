@@ -34,10 +34,16 @@ clean-pyc: ## remove Python file artifacts
 clean-test: ## remove test and coverage artifacts
 	rm -fr .pytest_cache
 
-lint/pylint: ## check style with flake8
-	pylint pytest_isolate_mpi tests
+lint/black: ## reformat source code
+	python -m black .
 
-lint: lint/pylint ## check style
+lint/pycodestyle: ## check PEP8 conformity
+	pycodestyle
+
+lint/pylint: ## check style with pylint
+	pylint .
+
+lint: lint/black lint/pycodestyle lint/pylint ## check style
 
 test: ## run tests quickly with the default Python
 	pytest tests

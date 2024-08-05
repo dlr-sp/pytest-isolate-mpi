@@ -38,6 +38,7 @@ dev = [
     "wheel",
     "numpy",
     "black",
+    "pycodestyle",
 ]
 
 
@@ -71,6 +72,7 @@ disable = [
     "missing-class-docstring",
     "missing-function-docstring",
     "missing-module-docstring",
+    "fixme",
 ]
 good-names-rgxs = "^[_a-z][_a-z0-9]?$"
 

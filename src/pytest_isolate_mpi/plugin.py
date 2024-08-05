@@ -7,12 +7,10 @@ import argparse
 import copy
 import dataclasses
 import subprocess
-import enum
 import pickle
 import shutil
 import sys
 import warnings
-from typing import Any, Union
 from tempfile import TemporaryDirectory
 
 import collections
@@ -21,6 +19,7 @@ import pytest
 
 
 from _pytest import runner
+from _pytest.main import Session
 from _pytest.reports import TestReport
 
 from ._constants import ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN
@@ -57,7 +56,7 @@ class MPIConfiguration:
                 pytest.ExitCode.USAGE_ERROR)
 
     def extend_command_for_parallel_execution(
-        self, cmd: list[str], ranks: int, env_mod: dict[str, Union[str, int]]
+        self, cmd: list[str], ranks: int, env_mod: dict[str, str | int]
     ) -> list[str]:
         """Extend a given command sequence by the mpirun call for the given number of ranks and environment modification
         given by env.
@@ -73,7 +72,7 @@ class MPIConfiguration:
 
         return parallel_cmd
 
-    def get_arguments_for_passing_environment_variables(self, env_mod: dict[str, Union[str, int]]):
+    def get_arguments_for_passing_environment_variables(self, env_mod: dict[str, str | int]):
 
         args = []
         for name, value in env_mod:
@@ -158,7 +157,7 @@ class MPIPlugin:
     _is_forked_mpi_environment: bool = False
     _verbose_mpi_info: bool = False
     _mpi_configuration: MPIConfiguration = MPIConfiguration()
-    _session: Any = None
+    _session: Session | None = None
 
     def _add_markers(self, item):
         """

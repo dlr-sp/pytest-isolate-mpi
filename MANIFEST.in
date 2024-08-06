@@ -1,12 +1,12 @@
 prune .gitlab-ci.yml
 
 include .editorconfig
-include CHANGES.rst
-include README.rst
+include *.rst
 include Makefile
 
-recursive-include data *.txt
-recursive-include tests *
+recursive-include examples *.py
+recursive-include tests *.ini
+recursive-include tests *.py
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 

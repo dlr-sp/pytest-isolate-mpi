@@ -5,7 +5,6 @@ Support for testing python code with MPI and pytest
 from __future__ import annotations
 
 import argparse
-import copy
 import dataclasses
 import subprocess
 import pickle
@@ -23,18 +22,14 @@ from _pytest.main import Session
 from _pytest.reports import TestReport
 
 from ._constants import ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN
-from ._constants import IS_FORKED_MPI_ARG
 from ._constants import MPIMarkerEnum
 from ._constants import MPI_ENV_HINTS
 from ._constants import TIME_UNIT_CONVERSION
 from ._constants import VERBOSE_MPI_ARG
-from ._fixtures import comm  # pylint: disable=unused-import
-from ._fixtures import mpi_file_name  # pylint: disable=unused-import
-from ._fixtures import mpi_tmpdir  # pylint: disable=unused-import
-from ._fixtures import mpi_tmp_path  # pylint: disable=unused-import
-
-
-# list of env variables copied from HPX
+from ._fixtures import comm_fixture  # pylint: disable=unused-import
+from ._fixtures import mpi_file_name_fixture  # pylint: disable=unused-import
+from ._fixtures import mpi_tmpdir_fixture  # pylint: disable=unused-import
+from ._fixtures import mpi_tmp_path_fixture  # pylint: disable=unused-import
 
 
 @dataclasses.dataclass(init=False)
@@ -155,22 +150,12 @@ class MPIPlugin:
             if mark.args:
                 raise ValueError("mpi mark does not take positional args")
 
-            # in our outer pytest run, we do not need to do any further checks
-            if not self._is_forked_mpi_environment:
-                continue
-
-            # check whether we have the correct number of cores
-            try:
-                from mpi4py import MPI
-            except ImportError:
-                pytest.fail("MPI tests require that mpi4py be installed")
-
     @pytest.hookimpl(trylast=True)
     def pytest_sessionstart(self, session):
         self._session = session
 
     @pytest.hookimpl
-    def pytest_sessionfinish(self, session):
+    def pytest_sessionfinish(self, session):  # pylint: disable=unused-argument
         self._session = None
 
     @pytest.hookimpl(tryfirst=True)
@@ -195,7 +180,7 @@ class MPIPlugin:
 
     def _mpi_runtestprococol_inner(self, item):
         try:
-            from mpi4py import MPI, rc, get_config
+            from mpi4py import MPI  # pylint: disable=import-outside-toplevel
         except ImportError:
             pytest.fail("MPI tests require that mpi4py be installed")
 
@@ -240,7 +225,7 @@ class MPIPlugin:
         timeout_expired = False
 
         with TemporaryDirectory() as tmpdir:
-            run_env = copy.copy(os.environ)
+            run_env = os.environ.copy()
             run_env[ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN] = "1"
             run_env["PYTEST_MPI_REPORTS_PATH"] = tmpdir
 
@@ -252,6 +237,7 @@ class MPIPlugin:
                     universal_newlines=True,
                     timeout=timeout,
                     capture_output=True,
+                    check=False,
                 )
             except subprocess.TimeoutExpired:
                 timeout_expired = True
@@ -271,7 +257,7 @@ class MPIPlugin:
                         f"{timeout_in[1]}{timeout_in[0]}."
                     )
                 else:
-                    msg = f"At least one MPI process has exited prematurely."
+                    msg = "At least one MPI process has exited prematurely."
                 rep = TestReport(
                     nodeid=item.nodeid, location=item.location, outcome="failed", when="call", keywords={}, longrepr=msg
                 )
@@ -292,7 +278,7 @@ class MPIPlugin:
     def _report_mpi_information(self, terminalreporter):
         terminalreporter.section("MPI Information")
         try:
-            from mpi4py import MPI, rc, get_config
+            from mpi4py import MPI, rc, get_config  # pylint: disable=import-outside-toplevel
         except ImportError:
             terminalreporter.write("Unable to import mpi4py")
         else:

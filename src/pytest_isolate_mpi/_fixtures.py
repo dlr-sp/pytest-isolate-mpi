@@ -6,17 +6,17 @@ import py
 import pytest
 
 
-@pytest.fixture
-def comm():
+@pytest.fixture(name="comm")
+def comm_fixture():
     try:
-        from mpi4py import MPI
+        from mpi4py import MPI  # pylint: disable=import-outside-toplevel
     except ImportError:
         pytest.fail("mpi4py needs to be installed to run this test")
     return MPI.COMM_WORLD
 
 
-@pytest.fixture
-def mpi_file_name(tmpdir, request):
+@pytest.fixture(name="mpi_file_name")
+def mpi_file_name_fixture(tmpdir, request):
     """
     Provides a temporary file name which can be used under MPI from all MPI
     processes.
@@ -25,7 +25,7 @@ def mpi_file_name(tmpdir, request):
     naming of temporary files.
     """
     try:
-        from mpi4py import MPI
+        from mpi4py import MPI  # pylint: disable=import-outside-toplevel
     except ImportError:
         pytest.fail("mpi4py needs to be installed to run this test")
 
@@ -39,8 +39,8 @@ def mpi_file_name(tmpdir, request):
     return name
 
 
-@pytest.fixture
-def mpi_tmpdir(tmpdir):
+@pytest.fixture(name="mpi_tmpdir")
+def mpi_tmpdir_fixture(tmpdir):
     """
     Wraps `pytest.tmpdir` so that it can be used under MPI from all MPI
     processes.
@@ -49,7 +49,7 @@ def mpi_tmpdir(tmpdir):
     naming of temporary folders.
     """
     try:
-        from mpi4py import MPI
+        from mpi4py import MPI  # pylint: disable=import-outside-toplevel
     except ImportError:
         pytest.fail("mpi4py needs to be installed to run this test")
 
@@ -63,8 +63,8 @@ def mpi_tmpdir(tmpdir):
     return py.path.local(name)
 
 
-@pytest.fixture
-def mpi_tmp_path(tmp_path):
+@pytest.fixture(name="mpi_tmp_path")
+def mpi_tmp_path_fixture(tmp_path):
     """
     Wraps `pytest.tmp_path` so that it can be used under MPI from all MPI
     processes.
@@ -73,7 +73,7 @@ def mpi_tmp_path(tmp_path):
     naming of temporary folders.
     """
     try:
-        from mpi4py import MPI
+        from mpi4py import MPI  # pylint: disable=import-outside-toplevel
     except ImportError:
         pytest.fail("mpi4py needs to be installed to run this test")
 

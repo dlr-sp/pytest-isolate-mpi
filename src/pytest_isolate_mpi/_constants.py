@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import enum
 
+
 @enum.unique
 class MPIMarkerEnum(str, enum.Enum):
     """
@@ -14,7 +15,6 @@ class MPIMarkerEnum(str, enum.Enum):
 
 
 VERBOSE_MPI_ARG = "--verbose-mpi"
-IS_FORKED_MPI_ARG = "--is-forked-by-main-pytest"
 ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN = "PYTEST_ISOLATE_MPI_IS_FORKED"
 TIME_UNIT_CONVERSION = {
     "s": lambda timeout: timeout,
@@ -22,6 +22,7 @@ TIME_UNIT_CONVERSION = {
     "h": lambda timeout: timeout * 3600,
 }
 
+# list of env variables copied from HPX
 MPI_ENV_HINTS = [
     "OMPI_COMM_WORLD_SIZE",
     "MV2_COMM_WORLD_RANK",

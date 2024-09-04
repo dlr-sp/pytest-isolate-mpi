@@ -1,6 +1,7 @@
 import os
 import time
 from pathlib import Path
+import random
 
 import pytest
 
@@ -75,3 +76,24 @@ def test_mpi_tmp_path(mpi_ranks, mpi_tmp_path):  # pylint: disable=unused-argume
 def test_no_mpi():
     """Simple test checking non-isolated non-MPI test remain possible."""
     assert ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN not in os.environ
+
+
+@pytest.fixture(scope='session', name='computation', params=['a', 'b'], ids=['A', 'B'])
+def expensive_fixture(request, comm):
+    """An expensive fixture"""
+    time.sleep(3)
+    val = random.random()
+    print(f'expensive fixture in rank {comm.rank} of size {comm.size} with parameter {request.param} calculated {val}')
+    return val
+
+
+@pytest.mark.mpi(ranks=[1, 2])
+def test_cache_first(mpi_ranks, computation):  # pylint: disable=unused-argument
+    # This test calls the fixture first.
+    print(f"got computation={computation}")
+
+
+@pytest.mark.mpi(ranks=[1, 2], timeout=1, unit="s")
+def test_cache_second(mpi_ranks, computation):  # pylint: disable=unused-argument
+    # This test calls the fixture second and uses the cache, avoiding timeout.
+    print(f"got computation={computation}")

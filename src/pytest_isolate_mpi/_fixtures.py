@@ -6,7 +6,7 @@ import py
 import pytest
 
 
-@pytest.fixture(name="comm")
+@pytest.fixture(scope='session', name="comm")
 def comm_fixture():
     try:
         from mpi4py import MPI  # pylint: disable=import-outside-toplevel

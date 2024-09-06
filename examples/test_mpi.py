@@ -78,22 +78,31 @@ def test_no_mpi():
     assert ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN not in os.environ
 
 
-@pytest.fixture(scope='session', name='computation', params=['a', 'b'], ids=['A', 'B'])
-def expensive_fixture(request, comm):
-    """An expensive fixture"""
-    time.sleep(3)
+@pytest.fixture(scope='session', params=['a', 'b'], ids=['A', 'B'])
+def first_fixture(request):
+    return request.param
+
+
+@pytest.fixture(scope='session', params=['x', 'y'], ids=['X', 'Y'])
+def second_fixture(first_fixture, request):
+    return first_fixture, request.param
+
+
+@pytest.fixture(scope='session')
+def expensive_fixture(second_fixture, comm):
+    time.sleep(4)
     val = random.random()
-    print(f'expensive fixture in rank {comm.rank} of size {comm.size} with parameter {request.param} calculated {val}')
+    print(f'expensive fixture in rank {comm.rank} of size {comm.size} with parameter {second_fixture} calculated {val}')
     return val
 
 
 @pytest.mark.mpi(ranks=[1, 2])
-def test_cache_first(mpi_ranks, computation):  # pylint: disable=unused-argument
+def test_cache_first(mpi_ranks, expensive_fixture):  # pylint: disable=unused-argument
     # This test calls the fixture first.
-    print(f"got computation={computation}")
+    print(f"got {expensive_fixture}")
 
 
-@pytest.mark.mpi(ranks=[1, 2], timeout=1, unit="s")
-def test_cache_second(mpi_ranks, computation):  # pylint: disable=unused-argument
+@pytest.mark.mpi(ranks=[1, 2], timeout=2, unit="s")
+def test_cache_second(mpi_ranks, expensive_fixture):  # pylint: disable=unused-argument
     # This test calls the fixture second and uses the cache, avoiding timeout.
-    print(f"got computation={computation}")
+    print(f"got {expensive_fixture}")

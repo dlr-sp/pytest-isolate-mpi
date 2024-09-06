@@ -20,6 +20,7 @@ import pytest
 from _pytest import runner
 from _pytest.main import Session
 from _pytest.reports import TestReport
+from _pytest.fixtures import FixtureDef
 
 from ._constants import ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN
 from ._constants import MPIMarkerEnum
@@ -328,7 +329,7 @@ class MPIPlugin:
                     res = fixturedef.cached_result[0]
                     pickle.dump(res, f)
 
-    def _get_cache_file_path(self, fixturedef, request) -> str:
+    def _get_cache_file_path(self, fixturedef: FixtureDef, request) -> str:
         """
         Returns a cache file path for a fixture call with size/rank combination.
         """
@@ -342,19 +343,29 @@ class MPIPlugin:
         return cache_file_path
 
     @staticmethod
-    def _get_identifier(fixturedef, request) -> str:
+    def _get_identifier(fixturedef: FixtureDef, request) -> str:
+        # pylint: disable=protected-access
         """Return a unique but minimal identifier string for a fixture call."""
-        name: str = fixturedef.argname  # this fixture's name
-        argnames: tuple[str] = fixturedef.argnames  # this fixture's arguments
-        # the test code as indices:
-        test_indices: dict[int] = request._pyfuncitem.callspec.indices  # pylint: disable=protected-access
-        # the test code's indices that are relevant to this fixture
-        # (might contain the fixture itself when it is parametrized):
-        fixture_indices: dict[int] = {name: index for name, index in test_indices.items()
-                                      if name in argnames + (fixturedef.argname,)}
-        if fixture_indices:
-            return name + "__" + "__".join([f"{name}-{index}" for name, index in fixture_indices.items()])
-        return name
+        # all the fixtures
+        fixturedefs: dict[str, FixtureDef] \
+            = {arg: f[0] for arg, f in request._arg2fixturedefs.items() if arg != 'request'}
+        # the test's parametrization as dictionary of indices:
+        test_indices: dict[str, int] = request._pyfuncitem.callspec.indices
+        fixture_name: str = fixturedef.argname  # this fixture's name
+
+        def get_dependent_names(fixturedef: FixtureDef) -> list[str]:
+            """recursively finds all the fixture names, that `fixturedef` depends on."""
+            dependent_names: list[str] = list(n for n in fixturedef.argnames if n != 'request')
+            for dependent_name in dependent_names:
+                dependent_fixture = fixturedefs[dependent_name]
+                dependent_names.extend(get_dependent_names(dependent_fixture))
+            return dependent_names
+
+        identifier = f"{fixture_name}"
+        for name in (fixture_name, *get_dependent_names(fixturedef)):
+            if name in test_indices:
+                identifier += f"~{name}-{test_indices[name]}"
+        return identifier
 
 
 def pytest_configure(config):

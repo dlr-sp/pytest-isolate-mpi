@@ -78,36 +78,36 @@ def test_no_mpi():
     assert ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN not in os.environ
 
 
-@pytest.fixture(scope='session', params=['a', 'b'], ids=['A', 'B'])
+@pytest.fixture(scope='session', name='first', params=['a', 'b'], ids=['A', 'B'])
 def first_fixture(request):
     return request.param
 
 
-@pytest.fixture(scope='session', params=['x', 'y'], ids=['X', 'Y'])
-def second_fixture(first_fixture, request):
-    return first_fixture, request.param
+@pytest.fixture(scope='session', name='second', params=['x', 'y'], ids=['X', 'Y'])
+def second_fixture(first, request):
+    return first, request.param
 
 
-@pytest.fixture(params=['u', 'v'], ids=['U', 'V'])
+@pytest.fixture(name='third', params=['u', 'v'], ids=['U', 'V'])
 def third_fixture(request):
     return request.param
 
 
-@pytest.fixture(scope='session')
-def expensive_fixture(second_fixture, comm):
+@pytest.fixture(scope='session', name='expensive')
+def expensive_fixture(second, comm):
     time.sleep(4)
     val = random.random()
-    print(f'expensive fixture in rank {comm.rank} of size {comm.size} with parameter {second_fixture} calculated {val}')
+    print(f'expensive fixture in rank {comm.rank} of size {comm.size} with parameter {second} calculated {val}')
     return val
 
 
 @pytest.mark.mpi(ranks=[1, 2])
-def test_cache_first(mpi_ranks, expensive_fixture):  # pylint: disable=unused-argument
+def test_cache_first(mpi_ranks, expensive):  # pylint: disable=unused-argument
     # This test calls the expensive fixture first.
-    print(f"got {expensive_fixture}")
+    print(f"got {expensive}")
 
 
 @pytest.mark.mpi(ranks=[1, 2], timeout=2, unit="s")
-def test_cache_second(mpi_ranks, expensive_fixture, third_fixture):  # pylint: disable=unused-argument
+def test_cache_second(mpi_ranks, expensive, third):  # pylint: disable=unused-argument
     # This test calls the expensive fixture second and uses the cache, avoiding timeout.
-    print(f"got {expensive_fixture} and {third_fixture}")
+    print(f"got {expensive} and {third}")

@@ -88,6 +88,11 @@ def second_fixture(first_fixture, request):
     return first_fixture, request.param
 
 
+@pytest.fixture(params=['u', 'v'], ids=['U', 'V'])
+def third_fixture(request):
+    return request.param
+
+
 @pytest.fixture(scope='session')
 def expensive_fixture(second_fixture, comm):
     time.sleep(4)
@@ -98,11 +103,11 @@ def expensive_fixture(second_fixture, comm):
 
 @pytest.mark.mpi(ranks=[1, 2])
 def test_cache_first(mpi_ranks, expensive_fixture):  # pylint: disable=unused-argument
-    # This test calls the fixture first.
+    # This test calls the expensive fixture first.
     print(f"got {expensive_fixture}")
 
 
 @pytest.mark.mpi(ranks=[1, 2], timeout=2, unit="s")
-def test_cache_second(mpi_ranks, expensive_fixture):  # pylint: disable=unused-argument
-    # This test calls the fixture second and uses the cache, avoiding timeout.
-    print(f"got {expensive_fixture}")
+def test_cache_second(mpi_ranks, expensive_fixture, third_fixture):  # pylint: disable=unused-argument
+    # This test calls the expensive fixture second and uses the cache, avoiding timeout.
+    print(f"got {expensive_fixture} and {third_fixture}")

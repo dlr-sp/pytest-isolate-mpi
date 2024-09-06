@@ -34,7 +34,7 @@ import pytest
         pytest.param("test_skip", {"skipped": 6}, [], id="test_skip"),
         pytest.param("test_mpi_tmp_path", {"passed": 2}, [], id="test_mpi_tmp_path"),
         pytest.param("test_no_mpi", {"passed": 1}, [], id="test_no_mpi"),
-        pytest.param("test_cache", {"passed": 24}, [], id="test_cache"),
+        pytest.param("test_cache", {"passed": 36}, [], id="test_cache"),
     ],
 )
 def test_outcomes(pytester, test, outcomes, lines):

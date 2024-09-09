@@ -20,13 +20,14 @@ import pytest
 from _pytest import runner
 from _pytest.main import Session
 from _pytest.reports import TestReport
-from _pytest.fixtures import FixtureDef
 
 from ._constants import ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN
 from ._constants import MPIMarkerEnum
 from ._constants import MPI_ENV_HINTS
 from ._constants import TIME_UNIT_CONVERSION
 from ._constants import VERBOSE_MPI_ARG
+from ._fixturecache import _load_fixture_result
+from ._fixturecache import _cache_fixture_result
 from ._fixtures import comm_fixture  # pylint: disable=unused-import
 from ._fixtures import mpi_file_name_fixture  # pylint: disable=unused-import
 from ._fixtures import mpi_tmpdir_fixture  # pylint: disable=unused-import
@@ -309,63 +310,11 @@ class MPIPlugin:
 
     @pytest.hookimpl
     def pytest_fixture_setup(self, fixturedef, request):
-        # note: `fixturedef` is `request._fixturedef`
-        if fixturedef.scope == 'session' and fixturedef.argname != 'comm':
-            cache_file_path = self._get_cache_file_path(fixturedef, request)
-            if os.path.isfile(cache_file_path):
-                with open(cache_file_path, mode="rb") as f:
-                    res = pickle.load(f)
-                fixturedef.cached_result = (res, None, None)
-                return True  # cache is loaded, do not call the fixture function
-        return None  # continue calling the fixture function
+        return _load_fixture_result(fixturedef, request)
 
     @pytest.hookimpl
     def pytest_fixture_post_finalizer(self, fixturedef, request):
-        if fixturedef.scope == 'session' and fixturedef.argname != 'comm':
-            cache_file_path = self._get_cache_file_path(fixturedef, request)
-            if not os.path.isfile(cache_file_path):
-                os.makedirs(os.path.dirname(cache_file_path), exist_ok=True)  # pylint: disable=consider-using-with
-                with open(cache_file_path, mode="wb") as f:
-                    res = fixturedef.cached_result[0]
-                    pickle.dump(res, f)
-
-    def _get_cache_file_path(self, fixturedef: FixtureDef, request) -> str:
-        """
-        Returns a cache file path for a fixture call with size/rank combination.
-        """
-        comm = request.getfixturevalue('comm')
-        # each MPI size/rank combination gets its own folder
-        cache_dir = os.path.join(
-            os.environ["PYTEST_MPI_CACHE_PATH"], f"size-{comm.size}", f"rank-{comm.rank}"
-        )
-        identifier = self._get_identifier(fixturedef, request)
-        cache_file_path = os.path.join(cache_dir, identifier)
-        return cache_file_path
-
-    @staticmethod
-    def _get_identifier(fixturedef: FixtureDef, request) -> str:
-        # pylint: disable=protected-access
-        """Return a unique but minimal identifier string for a fixture call."""
-        # all the fixtures
-        fixturedefs: dict[str, FixtureDef] \
-            = {arg: f[0] for arg, f in request._arg2fixturedefs.items() if arg != 'request'}
-        # the test's parametrization as dictionary of indices:
-        test_indices: dict[str, int] = request._pyfuncitem.callspec.indices
-        fixture_name: str = fixturedef.argname  # this fixture's name
-
-        def get_dependent_names(fixturedef: FixtureDef) -> list[str]:
-            """recursively finds all the fixture names, that `fixturedef` depends on."""
-            dependent_names: list[str] = list(n for n in fixturedef.argnames if n != 'request')
-            for dependent_name in dependent_names:
-                dependent_fixture = fixturedefs[dependent_name]
-                dependent_names.extend(get_dependent_names(dependent_fixture))
-            return dependent_names
-
-        identifier = f"{fixture_name}"
-        for name in (fixture_name, *get_dependent_names(fixturedef)):
-            if name in test_indices:
-                identifier += f"~{name}-{test_indices[name]}"
-        return identifier
+        return _cache_fixture_result(fixturedef, request)
 
 
 def pytest_configure(config):

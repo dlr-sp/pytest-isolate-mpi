@@ -34,11 +34,12 @@ import pytest
         pytest.param("test_skip", {"skipped": 6}, [], id="test_skip"),
         pytest.param("test_mpi_tmp_path", {"passed": 2}, [], id="test_mpi_tmp_path"),
         pytest.param("test_no_mpi", {"passed": 1}, [], id="test_no_mpi"),
+        pytest.param("test_cache", {"passed": 36}, [], id="test_cache"),
     ],
 )
 def test_outcomes(pytester, test, outcomes, lines):
     pytester.copy_example("test_mpi.py")
-    result = pytester.runpytest("-k", test)
+    result = pytester.runpytest("-v", "-rA", "-k", test)
     result.assert_outcomes(**outcomes)
     if lines:
         result.stdout.re_match_lines(lines, consecutive=True)

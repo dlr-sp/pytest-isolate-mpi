@@ -26,6 +26,8 @@ from ._constants import MPIMarkerEnum
 from ._constants import MPI_ENV_HINTS
 from ._constants import TIME_UNIT_CONVERSION
 from ._constants import VERBOSE_MPI_ARG
+from ._fixturecache import _load_fixture_result
+from ._fixturecache import _cache_fixture_result
 from ._fixtures import comm_fixture  # pylint: disable=unused-import
 from ._fixtures import mpi_file_name_fixture  # pylint: disable=unused-import
 from ._fixtures import mpi_tmpdir_fixture  # pylint: disable=unused-import
@@ -107,6 +109,7 @@ class MPIPlugin:
     _verbose_mpi_info: bool = False
     _mpi_configuration: MPIConfiguration = MPIConfiguration()
     _session: Session | None = None
+    _cache_tempdir: TemporaryDirectory | None = None
 
     def pytest_configure(self, config):
         """
@@ -140,7 +143,7 @@ class MPIPlugin:
                     if not isinstance(rank, int) or rank <= 0:
                         pytest.exit("Number of MPI ranks must be a positive integer", pytest.ExitCode.USAGE_ERROR)
 
-                metafunc.parametrize("mpi_ranks", list_of_ranks)
+                metafunc.parametrize("mpi_ranks", list_of_ranks)  # maybe make this scope='session'?
 
     def pytest_runtest_setup(self, item):
         """
@@ -153,9 +156,14 @@ class MPIPlugin:
     @pytest.hookimpl(trylast=True)
     def pytest_sessionstart(self, session):
         self._session = session
+        if 'PYTEST_MPI_CACHE_PATH' not in os.environ:
+            self._cache_tempdir = TemporaryDirectory()  # pylint: disable=consider-using-with
+            os.environ["PYTEST_MPI_CACHE_PATH"] = self._cache_tempdir.name
 
     @pytest.hookimpl
     def pytest_sessionfinish(self, session):  # pylint: disable=unused-argument
+        if self._cache_tempdir is not None:
+            self._cache_tempdir.cleanup()
         self._session = None
 
     @pytest.hookimpl(tryfirst=True)
@@ -196,7 +204,7 @@ class MPIPlugin:
             pickle.dump(reports, f)
         return reports
 
-    def _mpi_runtestprotocol(self, item):
+    def _mpi_runtestprotocol(self, item):  # pylint: disable=too-many-locals,too-many-branches
         mpi_ranks = 1
         for fixture in item.fixturenames:
             if fixture == "mpi_ranks" and "mpi_ranks" in item.callspec.params:
@@ -299,6 +307,14 @@ class MPIPlugin:
             terminalreporter.write("mpi4py config:\n")
             for name, value in get_config().items():
                 terminalreporter.write(f" {name}: {value}\n")
+
+    @pytest.hookimpl
+    def pytest_fixture_setup(self, fixturedef, request):
+        return _load_fixture_result(fixturedef, request)
+
+    @pytest.hookimpl
+    def pytest_fixture_post_finalizer(self, fixturedef, request):
+        return _cache_fixture_result(fixturedef, request)
 
 
 def pytest_configure(config):

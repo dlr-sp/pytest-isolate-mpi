@@ -97,6 +97,7 @@ mathjax_path = "tex-mml-chtml.js"
 intersphinx_mapping = {
     "python": ("https://docs.python.org/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
+    "mpi4py": ("https://mpi4py.readthedocs.io/en/stable/", None),
 }
 
 

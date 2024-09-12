@@ -5,6 +5,7 @@ include *.rst
 include Makefile
 
 recursive-include examples *.py
+recursive-include examples Makefile
 recursive-include tests *.ini
 recursive-include tests *.py
 recursive-exclude * __pycache__

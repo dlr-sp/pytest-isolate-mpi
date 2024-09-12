@@ -48,3 +48,6 @@ ENV/
 
 # Pytest debug log
 pytestdebug.log
+
+# Output of examples
+examples/*.py.out

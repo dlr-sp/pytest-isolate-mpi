@@ -1,22 +1,8 @@
-@font-face {
-    font-family: Frutiger;
-    src: url("FrutigerLTW02-45Light.eot?#iefix") format("eot"), url("FrutigerLTW02-45Light.woff2") format("woff2"), url("FrutigerLTW02-45Light.woff") format("woff"), url("FrutigerLTW02-45Light.ttf") format("truetype");
-    font-weight: normal;
-}
-
-@font-face {
-    font-family: Frutiger;
-    src: url("FrutigerLTW02-65Bold.eot?#iefix") format("eot"), url("FrutigerLTW02-65Bold.woff2") format("woff2"), url("FrutigerLTW02-65Bold.woff") format("woff"), url("FrutigerLTW02-65Bold.ttf") format("truetype");
-    font-weight: bold;
-}
-
 body {
-    font-family: Frutiger, sans-serif;
     color: #000;
 }
 
 h1, h2, .rst-content .toctree-wrapper p.caption, h3, h4, h5, h6, legend {
-    font-family: Frutiger, sans-serif;
 }
 
 a, a:link, a:visited, a:hover {
@@ -47,10 +33,10 @@ a, a:link, a:visited, a:hover {
     display: inline-block;
     background-image: url("dlr.svg");
 	width: 520px;
-    height: 114px;
+    height: 157px;
     background-size: contain;
     background-repeat: no-repeat;
-    margin-bottom: -50px;
+    margin-bottom: -75px;
 	transform: scale(0.5);
 	transform-origin: 0 0;
 }

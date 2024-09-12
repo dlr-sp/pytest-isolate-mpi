@@ -16,7 +16,7 @@ export PRINT_HELP_PYSCRIPT
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
-clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
+clean: clean-build clean-pyc clean-test clean-docs ## remove all build, test, coverage and Python artifacts
 
 clean-build: ## remove build artifacts
 	rm -fr dist/
@@ -31,6 +31,11 @@ clean-pyc: ## remove Python file artifacts
 clean-test: ## remove test and coverage artifacts
 	rm -fr .pytest_cache
 
+clean-docs: ## remove Sphinx build artifacts
+	$(MAKE) -C examples clean
+	rm -fr docs/code
+	rm -fr docs/_build
+    
 lint/black: ## reformat source code
 	python -m black .
 
@@ -49,6 +54,7 @@ docs: ## generate Sphinx HTML documentation, including API docs
 	rm -f docs/pytest_isolate_mpi.rst
 	rm -f docs/modules.rst
 	sphinx-apidoc -o docs/code src/pytest_isolate_mpi
+	$(MAKE) -C examples all
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 

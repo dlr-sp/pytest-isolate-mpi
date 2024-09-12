@@ -28,10 +28,9 @@ from ._constants import TIME_UNIT_CONVERSION
 from ._constants import VERBOSE_MPI_ARG
 from ._fixturecache import _load_fixture_result
 from ._fixturecache import _cache_fixture_result
-from ._fixtures import comm_fixture  # pylint: disable=unused-import
-from ._fixtures import mpi_file_name_fixture  # pylint: disable=unused-import
-from ._fixtures import mpi_tmpdir_fixture  # pylint: disable=unused-import
-from ._fixtures import mpi_tmp_path_fixture  # pylint: disable=unused-import
+from .fixtures import comm_fixture  # pylint: disable=unused-import
+from .fixtures import mpi_tmpdir_fixture  # pylint: disable=unused-import
+from .fixtures import mpi_tmp_path_fixture  # pylint: disable=unused-import
 
 
 @dataclasses.dataclass(init=False)
@@ -156,7 +155,7 @@ class MPIPlugin:
     @pytest.hookimpl(trylast=True)
     def pytest_sessionstart(self, session):
         self._session = session
-        if 'PYTEST_MPI_CACHE_PATH' not in os.environ:
+        if "PYTEST_MPI_CACHE_PATH" not in os.environ:
             self._cache_tempdir = TemporaryDirectory()  # pylint: disable=consider-using-with
             os.environ["PYTEST_MPI_CACHE_PATH"] = self._cache_tempdir.name
 
@@ -246,6 +245,7 @@ class MPIPlugin:
                     timeout=timeout,
                     capture_output=True,
                     check=False,
+                    cwd=self._session.config.rootdir,
                 )
             except subprocess.TimeoutExpired:
                 timeout_expired = True

@@ -44,9 +44,8 @@ To counter these, this code was designed as follows:
 These decisions have the following benefits:
 
 * In case of the tests actually running through, the results of the
-  multiple processes can, then, be gathered on the
-  main process and joined, leading to a unified output of the test
-  results.
+  multiple processes can, then, be gathered on the main process and
+  joined, leading to a unified output of the test results.
 * The forked environment allows to tolerate MPI_Abort and segfaults
   happening, as the main process is not touched.
 * in case of the tests catastrophically failing (segfault,

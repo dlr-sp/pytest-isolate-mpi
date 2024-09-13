@@ -26,7 +26,7 @@ Setting up a New Development Environment
 
 
     Using ``venv`` is not strictly necessary, but recommended to isolate
-    the procect dependencies from the ones of other projects. In the
+    the project dependencies from the ones of other projects. In the
     ``pip`` step, the development dependencies to run the tests and
     generate the HTML documentation are installed as well. By passing
     the flag ``-e`` the package is installed in editable mode. Changes

@@ -17,7 +17,7 @@ parameter as shown in the example.
 
 For any test carrying the ``mpi`` mark, ``pytest-isolate-mpi`` will
 launch an MPI job with the requested amount of processes. In this MPI
-job,  a ``pytest`` session runs this particular tests. Each MPI process
+job, a ``pytest`` session runs this particular tests. Each MPI process
 produces its own test report which is collected in the main process. To
 distinguish the reports form each MPI process, ``pytest-isolate-mpi``
 extends the node IDs of the test reports to contain the source rank
@@ -27,8 +27,8 @@ result in (with ``--verbose`` passed to ``pytest``):
 .. literalinclude:: ../examples/test_basic.py.out
     :linenos:
     :language: output
-    
-By having an dedicated report for each MPI process, failing ranks can be
+
+By having a dedicated report for each MPI process, failing ranks can be
 easily identified:
 
 .. literalinclude:: ../examples/test_one_failing_rank.py
@@ -67,13 +67,13 @@ tests with the ``timeout`` argument of the ``mpi`` mark:
 .. literalinclude:: ../examples/test_mpi_deadlock.py
     :linenos:
 
-``timeout`` sets maximum permissible runtime before the test is
-forcefully terminated. With the optional ``unit`` argument one can set
+``timeout`` sets maximum allowed runtime before the test is
+forcefully terminated. With the optional ``unit`` argument, one can set
 the time unit for the duration. Supported are ``"s"`` for seconds,
 ``"m"`` for minutes and ``h`` for hours. If not specified explicitly,
 the default unit is seconds.
 
-By setting an timeout for an MPI-parallel test, deadlocks in this test
+By setting a timeout for an MPI-parallel test, deadlocks in this test
 will no longer prevent the completion of the test suite:
 
 .. literalinclude:: ../examples/test_mpi_deadlock.py.out
@@ -86,21 +86,21 @@ MPI Fixtures
 development of MPI-parallel tests:
 
 comm
-    The MPI communicator available for the MPI-parallel test, i.g. 
+    The MPI communicator available for the MPI-parallel test, i.e.
     :obj:`mpi4py.MPI.COMM_WORLD`.
 
     See also :func:`pytest_isolate_mpi.fixtures.comm_fixture`.
-    
+
 
 mpi_tmpdir
-    Wraps Pytest builtin ``tmpdir`` fixture so that it can be used under
+    Wraps Pytest builtin ``tmpdir`` fixture such that it can be used under
     MPI from all MPI processes.
 
     See also :func:`pytest_isolate_mpi.fixtures.mpi_tmpdir_fixture`.
 
 mpi_tmp_path
-    Wraps Pytest builtin ``tmp_path`` fixture so that it can be used under
-    MPI from all MPI processes.
+    Wraps Pytest builtin ``tmp_path`` fixture such that it can be used
+    under MPI from all MPI processes.
 
     See also :func:`pytest_isolate_mpi.fixtures.mpi_tmp_path_fixture`.
 
@@ -115,7 +115,7 @@ If a Pytest session running a single MPI-parallel test exits
 prematurely, it may fail to write its test report to its predetermined
 location. In this case, ``pytest-isolate-mpi`` can no longer provide a
 per-process test report for the failed ranks. Instead,
-``pytest-isolate-mpi`` will instead produce the output of ``mpirun``
+``pytest-isolate-mpi`` will produce the output of ``mpirun``
 which will contain the full output of all parallel-run Pytest sessions
 and ``mpirun`` itself:
 
@@ -134,16 +134,16 @@ default ``function`` scope is limited for MPI-parallel tests:
 
 * ``session``: ``pytest-isolate-mpi`` will store the result of
   session-scoped fixture functions in a cache file. This file will be
-  read back then the fixture is requested by subsequent tests. The file
+  read back when the fixture is requested by subsequent tests. The file
   is managed per MPI communicator size and rank so each MPI process
   caches its own dedicated fixture. Sharing fixtures between tests of
   differently sized communicators and non-MPI/MPI tests is not possible.
-  Fixtures are serialized with the :mod:`pickle` module. Beware of that
+  Fixtures are serialized with the :mod:`pickle` module. Please note that
   not all Python objects support pickling.
 
 * ``class``, ``module``, and ``package``: Fixtures for these scopes are
   re-created for each MPI-parallel tests. Such fixtures effectively
-  behave as they were function-scoped.
+  behave as if they were function-scoped.
 
 For non-MPI tests, fixture scopes behave as usual even if
 ``pytest-isolate-mpi`` is employed in the project.

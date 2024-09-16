@@ -30,4 +30,4 @@ jobs:
         make lint
     - name: Run test suite
       run: |
-        make test    
+        make OMPI_MCA_rmaps_base_oversubscribe=true test    

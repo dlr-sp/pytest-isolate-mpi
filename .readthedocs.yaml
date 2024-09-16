@@ -5,10 +5,14 @@ version: 2
 
 build:
   os: ubuntu-22.04
+  apt_packages:
+    - libopenmpi-dev
   tools:
     python: "3.10"
-  commands:
-    - sudo apt-get update
-    - sudo apt-get -y install libopenmpi-dev
-    - pip install ".[dev]"
-    - make BUILDDIR=$READTHEDOCS_OUTPUT docs
+  jobs:
+    pre_build:
+      - make BUILDDIR=$READTHEDOCS_OUTPUT docs
+
+sphinx:
+  configuration: docs/conf.py
+  fail_on_warning: true

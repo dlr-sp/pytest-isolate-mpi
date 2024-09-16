@@ -1,0 +1,37 @@
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        pytest-version: ["7.3", "7.4", "8.0", "8.1", "8.2", "8.3"]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install OpenMPI
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install libopenmpi-dev
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest~=${{ matrix.pytest-version }}.0 ".[dev]"
+    - name: Run linters
+      continue-on-error: true
+      run: |
+        make lint
+    - name: Run test suite
+      run: |
+        make OMPI_MCA_rmaps_base_oversubscribe=true test    

@@ -8,9 +8,7 @@ build:
   tools:
     python: "3.10"
   commands:
-    - apt-get update
-    - apt-get -y install libopenmpi-dev
-    - export OMPI_ALLOW_RUN_AS_ROOT=1
-    - export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+    - sudo apt-get update
+    - sudo apt-get -y install libopenmpi-dev
     - pip install ".[dev]"
     - make BUILDDIR=$READTHEDOCS_OUTPUT docs

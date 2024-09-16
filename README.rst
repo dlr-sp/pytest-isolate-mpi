@@ -1,51 +1,61 @@
-==================
-pytest-isolate-mpi
-==================
+MPI-Parallel, Crash-Safe Tests for Pytest
+=========================================
 
-pytest-isolate-mpi allows for MPI-parallel tests being executed in a segfault and MPI_Abort safe manner
+``pytest-isolate-mpi`` is a plugin for `Pytest`_ to enable the test of
+MPI-parallel Python software. MPI-parallel tests are executed in forked
+MPI jobs with the help of `mpirun`_ to isolate the tests from each
+other. Thus, a crash in test only aborts the test, not the whole test
+suite. Similarly, deadlocks can be treated with timeouts for tests to
+prevent a test suite from never being able to finish::
 
-
-Features
---------
-
-* TODO
-
-Setting up a New Development Environment
-----------------------------------------
-
-1.  Obtain the source code::
-
-        git clone git@gitlab.dlr.de:dlr-sp/pytest-isolate-mpi.git
-        cd pytest_isolate_mpi
-
-2.  Install a new Python |venv|_::
-
-        python3 -m venv venv
-        source venv/bin/activate
-        pip install -e ".[dev]"
+    import pytest
+    
+    
+    @pytest.mark.mpi(ranks=2, timeout=10, unit="s")
+    def test_with_mpi(mpi_ranks):
+        assert True  # replace with actual, MPI-parallel test code
 
 
-    Using ``venv`` is not strictly necessary, but recommended to isolate
-    the project dependencies from the ones of other projects. In the
-    ``pip`` step, the development dependencies to run the tests and
-    generate the HTML documentation are installed as well. By passing
-    the flag ``-e`` the package is installed in editable mode. Changes
-    to the source code don't have to be installed to become effective
-    when running ``venv/bin/pytest_isolate_mpi``.
+.. _pytest: https://docs.pytest.org/en/stable/
+.. _mpirun: https://docs.open-mpi.org/en/v5.0.x/man-openmpi/man1/mpirun.1.html
 
-.. |venv| replace:: ``venv``
-.. _venv: https://docs.python.org/3/library/venv.html
+Installation
+------------
 
-Running pytest-isolate-mpi
---------------------------
+``pytest-isolate-mpi`` is available on `pypi.org`_ and can be installed
+with ``pip``::
 
-After the setup of the development environment, the project can be run
-from the project directory with::
+    pip install pytest-mpi-isolate
 
-    pytest_isolate_mpi data/sample.txt
 
-This requires the virtual environment to be activated. In new shells,
-this step has to be repeated once from the project folder with::
+.. _pypi.org: https://pypi.org/project/pytest-isolate-mpi/
 
-    source venv/bin/activate
+Documentation
+-------------
+
+For the full documentation, please see
+https://pytest-isolate-mpi.readthedocs.io/.
+
+Contributing
+------------
+
+Please refer to the `Contributor Guide <CONTRIBUTING.rst>`_ for
+instructions on how to contribute to ``pytest-isolate-mpi``.
+
+License
+-------
+
+This work is licensed under the conditions of the BSD license, see
+`LICENSE <LICENSE>`_.
+
+The software is provided as is.  We sincerely welcome your feedback on
+issues, bugs and possible improvements.  Please use the issue tracker of
+the project for the corresponding communication or make a fork.  Our
+priority and time line for working on the issues depend on the project
+and its follow ups.  This may lead to issue and tickets, which are not
+pursued.  In case you need an urgent fix, please contact us directly for
+discussing possible forms of collaboration (direct contribution,
+projects, contracting, ...): `Institute of Software Methods for Product
+Virtualization <https://www.dlr.de/sp>`_.
+
 

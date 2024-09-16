@@ -13,7 +13,7 @@ dynamic = ["version"]
 keywords = []
 authors = [
   { name = "Sebastian Gottfried", email = "sebastian.gottfried@dlr.de" },
-  { name = "Jordan Lavialle"},
+  { name = "Jordan Lavialle", email = "jordan.j.lavialle@airbus.com"},
   { name = "Immo Huismann", email = "immo.huismann@dlr.de" },
 ]
 classifiers = [
@@ -42,13 +42,11 @@ dev = [
 ]
 
 
-# FIXME: Update these ofter OSS release
-# [project.urls]
-# Homepage = "https://example.com"
-# Documentation = "https://readthedocs.org"
-# Repository = "https://github.com/me/spam.git"
-# "Bug Tracker" = "https://github.com/me/spam/issues"
-# Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+[project.urls]
+Documentation = "http://pytest-isolate-mpi.readthedocs.io/"
+Repository = "https://github.com/dlr-sp/pytest-isolate-mpi"
+"Bug Tracker" = "https://github.com/dlr-sp/pytest-isolate-mpi/issues"
+Changelog = "https://github.com/dlr-sp/pytest-isolate-mpi/blob/main/CHANGES.rst"
 
 
 [project.entry-points.pytest11]

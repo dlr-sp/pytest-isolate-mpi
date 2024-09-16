@@ -11,7 +11,7 @@ build:
     python: "3.10"
   jobs:
     pre_build:
-      - make BUILDDIR=$READTHEDOCS_OUTPUT docs
+      - make BUILDDIR=$READTHEDOCS_OUTPUT OMPI_MCA_rmaps_base_oversubscribe=true docs
 
 sphinx:
   configuration: docs/conf.py

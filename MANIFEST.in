@@ -1,4 +1,5 @@
-prune .gitlab-ci.yml
+prune .github
+prune .readthedocs.yaml
 
 include .editorconfig
 include *.rst

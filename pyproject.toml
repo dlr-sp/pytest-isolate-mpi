@@ -17,7 +17,7 @@ authors = [
   { name = "Immo Huismann", email = "immo.huismann@dlr.de" },
 ]
 classifiers = [
-  "Development Status :: 2 - Alpha",
+  "Development Status :: 4 - Beta",
   "Programming Language :: Python",
   "Framework :: Pytest",
 ]

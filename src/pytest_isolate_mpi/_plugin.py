@@ -39,53 +39,47 @@ class MPIConfiguration:
 
     mpirun_executable: str
     flag_for_processes: str
-    flag_for_passing_environment_variables: str
+    mpirun_command_line_inputs: list[str]
 
-    def __init__(self):
-        """TODO: Make this configurable by the pytest ini files."""
-        self.mpirun_executable = self.__get_mpirun_executable()
-        self.flag_for_processes = "-n"
-        self.flag_for_passing_environment_variables = "-x"
-
-        if not self.mpirun_executable:
-            pytest.exit("failed to find mpirun/mpiexec required for starting MPI tests", pytest.ExitCode.USAGE_ERROR)
+    def __init__(
+            self,
+            mpi_executable: str = None,
+            flag_for_processes="-n",
+            mpi_command_line_inputs: list[str] = None
+    ):
+        if mpi_executable is None:
+            self.mpirun_executable = self.__get_mpirun_executable()
+        else:
+            if shutil.which(mpi_executable) is None:
+                pytest.exit(f"failed to find mpi executable {mpi_executable} as defined in ini-file.",
+                            pytest.ExitCode.USAGE_ERROR)
+            self.mpirun_executable = mpi_executable
+        self.flag_for_processes = flag_for_processes
+        self.mpirun_command_line_inputs = mpi_command_line_inputs if mpi_command_line_inputs else []
 
     def extend_command_for_parallel_execution(
-        self, cmd: list[str], ranks: int, env_mod: dict[str, str | int]
+        self, cmd: list[str], ranks: int
     ) -> list[str]:
-        """Extend a given command sequence by the mpirun call for the given number of ranks and environment modification
-        given by env.
-
-        """
+        """Extend a given command sequence by the mpirun call for the given number of ranks."""
         parallel_cmd = (
             [
                 self.mpirun_executable,
                 self.flag_for_processes,
                 str(ranks),
             ]
-            + self.get_arguments_for_passing_environment_variables(env_mod)
+            + self.mpirun_command_line_inputs
             + cmd
         )
 
         return parallel_cmd
 
-    def get_arguments_for_passing_environment_variables(self, env_mod: dict[str, str | int]):
-
-        args = []
-        for name, value in env_mod:
-            args += [self.flag_for_passing_environment_variables, f"{name}={value}"]
-
-        return args
-
     @staticmethod
     def __get_mpirun_executable() -> str:
-        mpirun = ""
         if shutil.which("mpirun") is not None:
-            mpirun = "mpirun"
+            return "mpirun"
         elif shutil.which("mpiexec") is not None:
-            mpirun = "mpiexec"
-
-        return mpirun
+            return "mpiexec"
+        pytest.exit("failed to find mpirun/mpiexec required for starting MPI tests", pytest.ExitCode.USAGE_ERROR)
 
 
 def assemble_sub_pytest_cmd(option: argparse.Namespace, nodeid: str):
@@ -106,7 +100,7 @@ class MPIPlugin:
 
     _is_forked_mpi_environment: bool = False
     _verbose_mpi_info: bool = False
-    _mpi_configuration: MPIConfiguration = MPIConfiguration()
+    _mpi_configuration: MPIConfiguration
     _session: Session | None = None
     _cache_tempdir: TemporaryDirectory | None = None
 
@@ -116,6 +110,12 @@ class MPIPlugin:
         """
         self._is_forked_mpi_environment = bool(os.environ.get(ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN, ""))
         self._verbose_mpi_info = config.getoption(VERBOSE_MPI_ARG)
+
+        self._mpi_configuration = MPIConfiguration(
+            mpi_executable=config.getini("mpi_executable"),
+            flag_for_processes=config.getini("mpi_flag_for_processes"),
+            mpi_command_line_inputs=config.getini("mpi_command_line_inputs")
+        )
 
         # double check whether MPI environment variables are residing in the forked env
         if not self._is_forked_mpi_environment:
@@ -221,7 +221,6 @@ class MPIPlugin:
         cmd = self._mpi_configuration.extend_command_for_parallel_execution(
             cmd=assemble_sub_pytest_cmd(self._session.config.option, item.nodeid),
             ranks=mpi_ranks,
-            env_mod={},
         )
 
         if self._verbose_mpi_info:
@@ -333,3 +332,9 @@ def pytest_addoption(parser):
     group.addoption(
         VERBOSE_MPI_ARG, action="store_true", default=False, help="Include detailed MPI information in output."
     )
+    parser.addini("mpi_executable", type="string", default=None,
+                  help="mpi executable (e.g. 'mpirun', 'mpiexec', 'srun')")
+    parser.addini("mpi_flag_for_processes", type="string", default="-n",
+                  help="mpi flag for number of processes ('-n')")
+    parser.addini("mpi_command_line_inputs", type="args", default=None,
+                  help="mpi command line inputs (e.g. '--bind-to core')")

@@ -50,7 +50,10 @@ def _get_identifier(fixturedef: FixtureDef, request: SubRequest) -> str:
     # all the fixtures
     fixturedefs: dict[str, FixtureDef] = {arg: f[0] for arg, f in request._arg2fixturedefs.items() if arg != "request"}
     # the test's parametrization as dictionary of indices:
-    test_indices: dict[str, int] = request._pyfuncitem.callspec.indices
+    if hasattr(request._pyfuncitem, 'callspec'):
+        test_indices: dict[str, int] = request._pyfuncitem.callspec.indices
+    else:
+        test_indices: dict[str, int] = {}
     fixture_name: str = fixturedef.argname  # this fixture's name
 
     def get_dependent_names(fixturedef: FixtureDef) -> list[str]:

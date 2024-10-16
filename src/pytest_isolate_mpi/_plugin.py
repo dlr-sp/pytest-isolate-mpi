@@ -47,7 +47,7 @@ class MPIConfiguration:
             flag_for_processes="-n",
             mpi_command_line_inputs: list[str] = None
     ):
-        if mpi_executable is None:
+        if not mpi_executable:
             self.mpirun_executable = self.__get_mpirun_executable()
         else:
             if shutil.which(mpi_executable) is None:
@@ -326,7 +326,7 @@ def pytest_configure(config):
 
 def pytest_addoption(parser):
     """
-    Add pytest-mpi options to pytest cli
+    Add pytest-mpi options to pytest cli and ini file
     """
     group = parser.getgroup("mpi", description="support for MPI-enabled code")
     group.addoption(

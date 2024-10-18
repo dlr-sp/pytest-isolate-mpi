@@ -310,11 +310,14 @@ class MPIPlugin:
 
     @pytest.hookimpl
     def pytest_fixture_setup(self, fixturedef, request):
-        return _load_fixture_result(fixturedef, request)
+        if self._is_forked_mpi_environment:
+            return _load_fixture_result(fixturedef, request)
+        return None
 
     @pytest.hookimpl
     def pytest_fixture_post_finalizer(self, fixturedef, request):
-        return _cache_fixture_result(fixturedef, request)
+        if self._is_forked_mpi_environment:
+            return _cache_fixture_result(fixturedef, request)
 
 
 def pytest_configure(config):

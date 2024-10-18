@@ -89,7 +89,7 @@ class MPIConfiguration:
 
 
 def assemble_sub_pytest_cmd(option: argparse.Namespace, nodeid: str):
-    cmd = [sys.executable, "-m", "mpi4py", "-m", "pytest", "--capture", option.capture]
+    cmd = [sys.executable, "-m", "mpi4py", "-m", "pytest", "--capture", option.capture, "--no-header", "--no-summary"]
     if option.debug:
         cmd += ["--debug"]
     if option.verbose:

@@ -48,7 +48,7 @@ class MPIConfiguration:
             mpi_command_line_inputs: list[str] = None
     ):
         if not mpi_executable:
-            self.mpirun_executable = self.__get_mpirun_executable()
+            self.mpirun_executable = self.__deduce_mpirun_executable()
         else:
             if shutil.which(mpi_executable) is None:
                 pytest.exit(f"failed to find mpi executable {mpi_executable} as defined in ini-file.",
@@ -74,7 +74,7 @@ class MPIConfiguration:
         return parallel_cmd
 
     @staticmethod
-    def __get_mpirun_executable() -> str:
+    def __deduce_mpirun_executable() -> str:
         if shutil.which("mpirun") is not None:
             return "mpirun"
         elif shutil.which("mpiexec") is not None:

@@ -31,7 +31,6 @@ from importlib.metadata import version as get_version
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
-    "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
 ]
@@ -82,15 +81,6 @@ todo_include_todos = False
 
 
 # -- Options for MathJax -----------------------------------------------
-
-# Use a local copy of the MathJax library
-mathjax_path = "tex-mml-chtml.js"
-
-# Further options to configure MathJax, see
-# https://docs.mathjax.org/en/latest/web/configuration.html#configuration
-#
-# mathjax3_config = {}
-
 
 # -- Intersphinx Mappings for crossreferencing upstream docs -----------
 

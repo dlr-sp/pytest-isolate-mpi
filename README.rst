@@ -39,8 +39,10 @@ https://pytest-isolate-mpi.readthedocs.io/.
 Contributing
 ------------
 
-Please refer to the `Contributor Guide <CONTRIBUTING.rst>`_ for
+Please refer to the `Contributor Guide`_ for
 instructions on how to contribute to ``pytest-isolate-mpi``.
+
+.. _Contributor Guide: https://pytest-isolate-mpi.readthedocs.io/en/latest/contributing.html
 
 License
 -------

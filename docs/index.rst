@@ -20,6 +20,7 @@ prevent a test suite from never being able to finish.
    usage
    api
    changes
+   contributing
    related_work
 
 Indices and tables

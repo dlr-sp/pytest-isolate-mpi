@@ -4,12 +4,10 @@ Support for testing python code with MPI and pytest
 
 from __future__ import annotations
 
-import argparse
 import dataclasses
 import subprocess
 import pickle
 import shutil
-import sys
 from tempfile import TemporaryDirectory
 
 import collections
@@ -31,6 +29,7 @@ from ._fixturecache import _cache_fixture_result
 from .fixtures import comm_fixture  # pylint: disable=unused-import
 from .fixtures import mpi_tmpdir_fixture  # pylint: disable=unused-import
 from .fixtures import mpi_tmp_path_fixture  # pylint: disable=unused-import
+from ._subsession import assemble_sub_pytest_cmd
 
 
 @dataclasses.dataclass(init=False)
@@ -86,17 +85,6 @@ class MPIConfiguration:
             mpirun = "mpiexec"
 
         return mpirun
-
-
-def assemble_sub_pytest_cmd(option: argparse.Namespace, nodeid: str):
-    cmd = [sys.executable, "-m", "mpi4py", "-m", "pytest", "--capture", option.capture]
-    if option.debug:
-        cmd += ["--debug"]
-    if option.verbose:
-        cmd += [f"-{option.verbose * 'v'}"]
-    # TODO: to be continued, go through `pytest --help` and look for relevant options to pass on
-    cmd += [nodeid]
-    return cmd
 
 
 class MPIPlugin:
@@ -243,7 +231,7 @@ class MPIPlugin:
                     env=run_env,
                     universal_newlines=True,
                     timeout=timeout,
-                    capture_output=True,
+                    capture_output=self._session.config.option.capture != "no",
                     check=False,
                     cwd=self._session.config.rootdir,
                 )
@@ -310,11 +298,14 @@ class MPIPlugin:
 
     @pytest.hookimpl
     def pytest_fixture_setup(self, fixturedef, request):
-        return _load_fixture_result(fixturedef, request)
+        if self._is_forked_mpi_environment:
+            return _load_fixture_result(fixturedef, request)
+        return None
 
     @pytest.hookimpl
     def pytest_fixture_post_finalizer(self, fixturedef, request):
-        return _cache_fixture_result(fixturedef, request)
+        if self._is_forked_mpi_environment:
+            _cache_fixture_result(fixturedef, request)
 
 
 def pytest_configure(config):

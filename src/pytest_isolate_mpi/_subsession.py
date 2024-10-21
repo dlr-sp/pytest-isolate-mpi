@@ -56,8 +56,6 @@ def _add_collection_options(cmd, option):
 
 
 def _add_test_session_options(cmd, option):
-    if option.basetemp:
-        cmd += ["--basetemp", option.basetemp]
     for plugin in option.plugins:
         cmd += ["-p", plugin]
     if option.traceconfig:

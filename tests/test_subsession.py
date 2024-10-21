@@ -198,8 +198,6 @@ from pytest_isolate_mpi._subsession import assemble_sub_pytest_cmd
                 "yes",
                 "--import-mode",
                 "prepend",
-                "--basetemp",
-                "/tmp",
                 "-p",
                 "isolate-mpi",
                 "--trace-config",

@@ -199,6 +199,12 @@ class MPIPlugin:
                 report.location = fspath, lineno, f"{domain}[rank={comm.rank}]"
                 report.nodeid = f"{report.nodeid}[rank={comm.rank}]"
             setattr(report, "rank", comm.rank)
+        if not os.path.isdir(os.environ["PYTEST_MPI_REPORTS_PATH"]):
+            raise RuntimeError(
+                "Could not find temporary directory. If you are using SLURM running on multiple compute nodes, this is "
+                "likely because each node has its own local `/tmp`. Try setting `$TMPDIR` to a single directory "
+                "outside the compute nodes."
+            )
         with open(os.path.join(os.environ["PYTEST_MPI_REPORTS_PATH"], f"{comm.rank}"), mode="wb") as f:
             pickle.dump(reports, f)
         return reports

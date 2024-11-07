@@ -108,18 +108,18 @@ mpi_tmp_path
 Configuration
 -------------
 
-``pytest-isolate-mpi`` can be configured through the ``pytest`` 
+``pytest-isolate-mpi`` can be configured through the ``pytest``
 `configuration file`_:
 
 mpi_executable
-    The mpi executable to launch the forked MPI environment with. If 
-    none is given, ``pytest-isolate-mpi`` tries ``mpirun`` and 
+    The mpi executable to launch the forked MPI environment with. If
+    none is given, ``pytest-isolate-mpi`` tries ``mpirun`` and
     ``mpiexec``.
 
 mpi_flag_for_processes
     The command line flag of the MPI executable indicating the number of
-    processes, such that ``pytest-isolate-mpi`` can launch the MPI 
-    environement with the appropriate number of processes as defined in 
+    processes, such that ``pytest-isolate-mpi`` can launch the MPI
+    environement with the appropriate number of processes as defined in
     the ``mpi`` mark. Defaults to ``-n``.
 
 mpi_command_line_inputs
@@ -133,6 +133,11 @@ could be::
     # pytest.ini
     mpi_executable = srun
     mpi_command_line_inputs = -N 2 --account MySlrumAccount
+
+
+When running Slurm with multiple compute nodes, make sure that ``$TMPDIR``
+is set to a single directory outside the compute nodes, e.g a directory on
+on ``/scratch`` or ``/lustre``.
 
 .. _configuration file: https://docs.pytest.org/en/stable/how-to/fixtures.html#fixture-scopes
 

@@ -37,25 +37,25 @@ from .fixtures import mpi_tmp_path_fixture  # pylint: disable=unused-import
 class MPIConfiguration:
     """Configuration defining how to execute an MPI-parallel subprocess"""
 
-    mpirun_executable: str
-    flag_for_processes: str
-    mpirun_command_line_inputs: list[str]
+    mpi_executable: str
+    mpi_option_for_processes: str
+    mpi_command_line_arguments: list[str]
 
     def __init__(
             self,
             mpi_executable: str = None,
-            flag_for_processes="-n",
-            mpi_command_line_inputs: list[str] = None
+            mpi_option_for_processes="-n",
+            mpi_command_line_args: list[str] = None
     ):
         if not mpi_executable:
-            self.mpirun_executable = self.__deduce_mpirun_executable()
+            self.mpi_executable = self.__deduce_mpirun_executable()
         else:
             if shutil.which(mpi_executable) is None:
                 pytest.exit(f"failed to find mpi executable {mpi_executable} as defined in ini-file.",
                             pytest.ExitCode.USAGE_ERROR)
-            self.mpirun_executable = mpi_executable
-        self.flag_for_processes = flag_for_processes
-        self.mpirun_command_line_inputs = mpi_command_line_inputs if mpi_command_line_inputs else []
+            self.mpi_executable = mpi_executable
+        self.mpi_option_for_processes = mpi_option_for_processes
+        self.mpi_command_line_arguments = mpi_command_line_args if mpi_command_line_args else []
 
     def extend_command_for_parallel_execution(
         self, cmd: list[str], ranks: int
@@ -63,11 +63,11 @@ class MPIConfiguration:
         """Extend a given command sequence by the mpirun call for the given number of ranks."""
         parallel_cmd = (
             [
-                self.mpirun_executable,
-                self.flag_for_processes,
+                self.mpi_executable,
+                self.mpi_option_for_processes,
                 str(ranks),
             ]
-            + self.mpirun_command_line_inputs
+            + self.mpi_command_line_arguments
             + cmd
         )
 
@@ -113,8 +113,8 @@ class MPIPlugin:
 
         self._mpi_configuration = MPIConfiguration(
             mpi_executable=config.getini("mpi_executable"),
-            flag_for_processes=config.getini("mpi_flag_for_processes"),
-            mpi_command_line_inputs=config.getini("mpi_command_line_inputs")
+            mpi_option_for_processes=config.getini("mpi_option_for_processes"),
+            mpi_command_line_args=config.getini("mpi_command_line_args")
         )
 
         # double check whether MPI environment variables are residing in the forked env
@@ -340,7 +340,7 @@ def pytest_addoption(parser):
     )
     parser.addini("mpi_executable", type="string", default=None,
                   help="mpi executable (e.g. 'mpirun', 'mpiexec', 'srun')")
-    parser.addini("mpi_flag_for_processes", type="string", default="-n",
-                  help="mpi flag for number of processes ('-n')")
-    parser.addini("mpi_command_line_inputs", type="args", default=None,
-                  help="mpi command line inputs (e.g. '--bind-to core')")
+    parser.addini("mpi_option_for_processes", type="string", default="-n",
+                  help="mpi option for number of processes ('-n')")
+    parser.addini("mpi_command_line_args", type="args", default=None,
+                  help="mpi command line arguments (e.g. '--bind-to core')")

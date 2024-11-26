@@ -116,23 +116,25 @@ mpi_executable
     none is given, ``pytest-isolate-mpi`` tries ``mpirun`` and
     ``mpiexec``.
 
-mpi_flag_for_processes
-    The command line flag of the MPI executable indicating the number of
+mpi_option_for_processes
+    The command line option of the MPI executable indicating the number of
     processes, such that ``pytest-isolate-mpi`` can launch the MPI
-    environement with the appropriate number of processes as defined in
+    environment with the appropriate number of processes as defined in
     the ``mpi`` mark. Defaults to ``-n``.
 
-mpi_command_line_inputs
-    Additional command line inputs to run the MPI executable with.
+mpi_command_line_args
+    Additional command line arguments to run the MPI executable with.
     By default, none are given.
 
-For example, the ``pytest.ini`` for execution on HPC clusters with Slurm
-could be::
+For example, the following ``pytest.ini`` will result in tests marked
+with ``@pytest.mark.mpi(ranks=2)`` to be launched by Slrum's ``srun`` on
+two compute nodes with 128 processes each.
 
 
     # pytest.ini
     mpi_executable = srun
-    mpi_command_line_inputs = -N 2 --account MySlrumAccount
+    mpi_option_for_processes = -N
+    mpi_command_line_args = --ntasks-per-node 128 --account <MySlrumAccount>
 
 
 When running Slurm with multiple compute nodes, make sure that ``$TMPDIR``

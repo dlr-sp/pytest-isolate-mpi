@@ -141,7 +141,7 @@ When running Slurm with multiple compute nodes, make sure that ``$TMPDIR``
 is set to a single directory outside the compute nodes, e.g a directory on
 on ``/scratch`` or ``/lustre``.
 
-.. _configuration file: https://docs.pytest.org/en/stable/how-to/fixtures.html#fixture-scopes
+.. _configuration file: https://docs.pytest.org/en/stable/reference/customize.html
 
 
 Limitations

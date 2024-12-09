@@ -22,6 +22,7 @@ from _pytest.reports import TestReport
 from ._constants import ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN
 from ._constants import MPIMarkerEnum
 from ._constants import MPI_ENV_HINTS
+from ._constants import NO_MPI_ISOLATION_ARG
 from ._constants import TIME_UNIT_CONVERSION
 from ._constants import VERBOSE_MPI_ARG
 from ._fixturecache import _load_fixture_result
@@ -41,24 +42,21 @@ class MPIConfiguration:
     mpi_command_line_arguments: list[str]
 
     def __init__(
-            self,
-            mpi_executable: str = None,
-            mpi_option_for_processes="-n",
-            mpi_command_line_args: list[str] = None
+        self, mpi_executable: str = None, mpi_option_for_processes="-n", mpi_command_line_args: list[str] = None
     ):
         if not mpi_executable:
             self.mpi_executable = self.__deduce_mpirun_executable()
         else:
             if shutil.which(mpi_executable) is None:
-                pytest.exit(f"failed to find mpi executable {mpi_executable} as defined in ini-file.",
-                            pytest.ExitCode.USAGE_ERROR)
+                pytest.exit(
+                    f"failed to find mpi executable {mpi_executable} as defined in ini-file.",
+                    pytest.ExitCode.USAGE_ERROR,
+                )
             self.mpi_executable = mpi_executable
         self.mpi_option_for_processes = mpi_option_for_processes
         self.mpi_command_line_arguments = mpi_command_line_args if mpi_command_line_args else []
 
-    def extend_command_for_parallel_execution(
-        self, cmd: list[str], ranks: int
-    ) -> list[str]:
+    def extend_command_for_parallel_execution(self, cmd: list[str], ranks: int) -> list[str]:
         """Extend a given command sequence by the mpirun call for the given number of ranks."""
         parallel_cmd = (
             [
@@ -73,10 +71,10 @@ class MPIConfiguration:
         return parallel_cmd
 
     @staticmethod
-    def __deduce_mpirun_executable() -> str:
+    def __deduce_mpirun_executable() -> str:  # pylint: disable=inconsistent-return-statements
         if shutil.which("mpirun") is not None:
             return "mpirun"
-        elif shutil.which("mpiexec") is not None:
+        if shutil.which("mpiexec") is not None:
             return "mpiexec"
         pytest.exit("failed to find mpirun/mpiexec required for starting MPI tests", pytest.ExitCode.USAGE_ERROR)
 
@@ -88,6 +86,7 @@ class MPIPlugin:
 
     _is_forked_mpi_environment: bool = False
     _verbose_mpi_info: bool = False
+    _no_mpi_isolation: bool = False
     _mpi_configuration: MPIConfiguration
     _session: Session | None = None
     _cache_tempdir: TemporaryDirectory | None = None
@@ -98,11 +97,12 @@ class MPIPlugin:
         """
         self._is_forked_mpi_environment = bool(os.environ.get(ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN, ""))
         self._verbose_mpi_info = config.getoption(VERBOSE_MPI_ARG)
+        self._no_mpi_isolation = config.getoption(NO_MPI_ISOLATION_ARG)
 
         self._mpi_configuration = MPIConfiguration(
             mpi_executable=config.getini("mpi_executable"),
             mpi_option_for_processes=config.getini("mpi_option_for_processes"),
-            mpi_command_line_args=config.getini("mpi_command_line_args")
+            mpi_command_line_args=config.getini("mpi_command_line_args"),
         )
 
         # double check whether MPI environment variables are residing in the forked env
@@ -161,7 +161,7 @@ class MPIPlugin:
         if self._is_forked_mpi_environment:
             reports = self._mpi_runtestprococol_inner(item)
         else:
-            if "mpi_ranks" in item.fixturenames:
+            if not self._no_mpi_isolation and "mpi_ranks" in item.fixturenames:
                 reports = self._mpi_runtestprotocol(item)
             else:
                 reports = runner.runtestprotocol(item, log=False)
@@ -329,9 +329,15 @@ def pytest_addoption(parser):
     group.addoption(
         VERBOSE_MPI_ARG, action="store_true", default=False, help="Include detailed MPI information in output."
     )
-    parser.addini("mpi_executable", type="string", default=None,
-                  help="mpi executable (e.g. 'mpirun', 'mpiexec', 'srun')")
-    parser.addini("mpi_option_for_processes", type="string", default="-n",
-                  help="mpi option for number of processes ('-n')")
-    parser.addini("mpi_command_line_args", type="args", default=None,
-                  help="mpi command line arguments (e.g. '--bind-to core')")
+    group.addoption(
+        NO_MPI_ISOLATION_ARG, action="store_true", default=False, help="Run tests without MPI and/or process isolation."
+    )
+    parser.addini(
+        "mpi_executable", type="string", default=None, help="mpi executable (e.g. 'mpirun', 'mpiexec', 'srun')"
+    )
+    parser.addini(
+        "mpi_option_for_processes", type="string", default="-n", help="mpi option for number of processes ('-n')"
+    )
+    parser.addini(
+        "mpi_command_line_args", type="args", default=None, help="mpi command line arguments (e.g. '--bind-to core')"
+    )

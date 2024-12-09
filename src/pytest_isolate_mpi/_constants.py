@@ -15,6 +15,7 @@ class MPIMarkerEnum(str, enum.Enum):
 
 
 VERBOSE_MPI_ARG = "--verbose-mpi"
+NO_MPI_ISOLATION_ARG = "--no-mpi-isolation"
 ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN = "PYTEST_ISOLATE_MPI_IS_FORKED"
 TIME_UNIT_CONVERSION = {
     "s": lambda timeout: timeout,

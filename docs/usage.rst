@@ -105,8 +105,28 @@ mpi_tmp_path
     See also :func:`pytest_isolate_mpi.fixtures.mpi_tmp_path_fixture`.
 
 
-Configuration
+Customization
 -------------
+
+Command Line Options
+~~~~~~~~~~~~~~~~~~~~
+
+The behavior of ``pytest-isolate-mpi`` can be customized via the
+following command line arguments to ``pytest``:
+
+--no-mpi-isolation
+    Run tests without MPI and/or process isolation. This is particular
+    useful for debugging parallel test cases. Normally, when ``pytest``
+    is run in a debugger, breakpoints in parallel tests would not trigger
+    because of the process isolation.
+
+--verbose-mpi
+    Include detailed MPI information in output.
+
+
+
+Configuration
+~~~~~~~~~~~~~
 
 ``pytest-isolate-mpi`` can be configured through the ``pytest``
 `configuration file`_:

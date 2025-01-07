@@ -1,6 +1,12 @@
 Changelog
 =========
 
+Version 0.3
+-----------
+
+- Add a command line option to disable MPI and/or process isolation to
+  make the debugging of MPI-parallel test cases easier.
+
 Version 0.2
 -----------
 

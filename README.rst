@@ -47,8 +47,8 @@ instructions on how to contribute to ``pytest-isolate-mpi``.
 License
 -------
 
-This work is licensed under the conditions of the BSD license, see
-`LICENSE <LICENSE>`_.
+This work is licensed under the conditions of the BSD-3-Clause license,
+see `LICENSE <LICENSE>`_.
 
 The software is provided as is.  We sincerely welcome your feedback on
 issues, bugs and possible improvements.  Please use the issue tracker of

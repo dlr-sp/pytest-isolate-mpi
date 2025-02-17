@@ -21,6 +21,8 @@ from _pytest.reports import TestReport
 
 from ._constants import ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN
 from ._constants import MPIMarkerEnum
+from ._constants import MPI_DEFAULT_TEST_TIMEOUT_ARG
+from ._constants import MPI_DEFAULT_TEST_TIMEOUT_UNIT_ARG
 from ._constants import MPI_ENV_HINTS
 from ._constants import NO_MPI_ISOLATION_ARG
 from ._constants import TIME_UNIT_CONVERSION
@@ -87,6 +89,8 @@ class MPIPlugin:
     _is_forked_mpi_environment: bool = False
     _verbose_mpi_info: bool = False
     _no_mpi_isolation: bool = False
+    _mpi_default_test_timeout: float | None = None
+    _mpi_default_test_timeout_unit: str = "s"
     _mpi_configuration: MPIConfiguration
     _session: Session | None = None
     _cache_tempdir: TemporaryDirectory | None = None
@@ -98,6 +102,8 @@ class MPIPlugin:
         self._is_forked_mpi_environment = bool(os.environ.get(ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN, ""))
         self._verbose_mpi_info = config.getoption(VERBOSE_MPI_ARG)
         self._no_mpi_isolation = config.getoption(NO_MPI_ISOLATION_ARG)
+        self._mpi_default_test_timeout = config.getoption(MPI_DEFAULT_TEST_TIMEOUT_ARG)
+        self._mpi_default_test_timeout_unit = config.getoption(MPI_DEFAULT_TEST_TIMEOUT_UNIT_ARG)
 
         self._mpi_configuration = MPIConfiguration(
             mpi_executable=config.getini("mpi_executable"),
@@ -206,9 +212,9 @@ class MPIPlugin:
         timeout = None
         timeout_in = ("NaN", "N/A")
         for mark in item.iter_markers(name="mpi"):
-            timeout = mark.kwargs.get("timeout", None)
+            timeout = mark.kwargs.get("timeout", self._mpi_default_test_timeout)
             if timeout is not None:
-                unit = mark.kwargs.get("unit", "s")
+                unit = mark.kwargs.get("unit", self._mpi_default_test_timeout_unit)
                 timeout_in = (unit, timeout)
                 timeout = TIME_UNIT_CONVERSION[unit](timeout)
 
@@ -331,6 +337,19 @@ def pytest_addoption(parser):
     )
     group.addoption(
         NO_MPI_ISOLATION_ARG, action="store_true", default=False, help="Run tests without MPI and/or process isolation."
+    )
+    group.addoption(
+        MPI_DEFAULT_TEST_TIMEOUT_ARG,
+        type=float,
+        default=None,
+        metavar="DURATION",
+        help="Default timeout after which MPI tests should be aborted. Defaults to no timeout, if not specified.",
+    )
+    group.addoption(
+        MPI_DEFAULT_TEST_TIMEOUT_UNIT_ARG,
+        choices=list(TIME_UNIT_CONVERSION.keys()),
+        default="s",
+        help="Default unit for test timeouts. Defaults to seconds, if not specified.",
     )
     parser.addini(
         "mpi_executable", type="string", default=None, help="mpi executable (e.g. 'mpirun', 'mpiexec', 'srun')"

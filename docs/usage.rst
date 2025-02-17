@@ -58,6 +58,8 @@ produced:
 .. literalinclude:: ../examples/test_number_of_processes_matches_ranks.py.out
     :language: output
 
+.. _timeouts:
+
 Enforcing a Maximum Runtime for MPI Tests
 -----------------------------------------
 
@@ -123,6 +125,19 @@ following command line arguments to ``pytest``:
 --verbose-mpi
     Include detailed MPI information in output.
 
+
+--mpi-default-test-timeout
+    Sets a default test timeout for all MPI-isolated tests. This timeout
+    can be overriden per test via the the ``timeout`` argument of the
+    ``mpi`` marker, see :ref:`timeouts`. Defaults to no timeout if not
+    specified.
+
+--mpi-default-test-timeout-unit
+    Sets a default test timeout unit for all MPI-isolated tests. This
+    timeout can be overriden per test via the the ``unit`` argument of
+    the ``mpi`` marker, see :ref:`timeouts`. Defaults to ``s`` for
+    seconds if not specified. The other valid choices are ``m`` for
+    minutes and ``h`` for hours.
 
 
 Configuration

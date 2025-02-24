@@ -4,8 +4,15 @@ Changelog
 Version 0.3
 -----------
 
-- Add a command line option to disable MPI and/or process isolation to
-  make the debugging of MPI-parallel test cases easier.
+- A command line option to disable MPI and/or process isolation has been
+  added. This particularly useful to debug MPI-parallel test cases.
+  (`#24`_)
+
+- Command line options to set a default test timeout and test timeout
+  unit for all MPI-parallel tests have been added. (`#20`_)
+
+.. _#20: https://github.com/dlr-sp/pytest-isolate-mpi/issues/20
+.. _#24: https://github.com/dlr-sp/pytest-isolate-mpi/issues/24
 
 Version 0.2
 -----------

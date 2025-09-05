@@ -351,6 +351,12 @@ def pytest_addoption(parser):
         default="s",
         help="Default unit for test timeouts. Defaults to seconds, if not specified.",
     )
+    parser.addoption(
+        "--python_executable",
+        default=None,
+        type=str,
+        help="Path to a custom python executable used to run the subsessions.",
+    )
     parser.addini(
         "mpi_executable", type="string", default=None, help="mpi executable (e.g. 'mpirun', 'mpiexec', 'srun')"
     )

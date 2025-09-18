@@ -357,6 +357,13 @@ def pytest_addoption(parser):
         type=str,
         help="Path to a custom python executable used to run the subsessions.",
     )
+    parser.addoption(
+        "--custom_ini_for_subsession",
+        type=str,
+        default=None,
+        help="Path to custom ini-file to use for the subsession instead of the one used by the outer call. Note that"
+        "the '--override_ini' option then applies to both separate ini-files.",
+    )
     parser.addini(
         "mpi_executable", type="string", default=None, help="mpi executable (e.g. 'mpirun', 'mpiexec', 'srun')"
     )

@@ -51,7 +51,9 @@ def _add_pytest_warning_options(cmd, option):
     if option.pythonwarnings is not None:
         for warning in option.pythonwarnings:
             cmd += ["--pythonwarnings", warning]
-    if option.inifilename is not None:  #  TODO: make option ignorable
+    if option.custom_ini_for_subsession:
+        cmd += ["--config-file", option.custom_ini_for_subsession]
+    elif option.inifilename is not None:
         cmd += ["--config-file", option.inifilename]
 
 

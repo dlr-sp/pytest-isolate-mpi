@@ -35,7 +35,7 @@ from pytest_isolate_mpi._subsession import assemble_sub_pytest_cmd
             id="no_options",
         ),
         pytest.param(
-            ["--python_executable", "/some/random/path/bin/python"],
+            ["--python-executable", "/some/random/path/bin/python"],
             [
                 "/some/random/path/bin/python",
                 "-m",
@@ -161,7 +161,7 @@ from pytest_isolate_mpi._subsession import assemble_sub_pytest_cmd
             id="pytest_warnings",
         ),
         pytest.param(
-            ["-W", "a", "-c", "foo.ini", "--custom_ini_for_subsession", "bar.ini"],
+            ["-W", "a", "-c", "foo.ini", "--custom-ini-for-subsession", "bar.ini"],
             [
                 sys.executable,
                 "-m",

@@ -139,6 +139,17 @@ following command line arguments to ``pytest``:
     seconds if not specified. The other valid choices are ``m`` for
     minutes and ``h`` for hours.
 
+--python-executable
+    Path to a custom Python executable used to run subsessions instead
+    of the executable used by the main session. This is useful for cases
+    in which the subsessions are to be run in a containerized fashion,
+    allowing the use of Python within the container.
+
+--custom-ini-for-subsession
+    Path to custom Pytest ini file to use for the subsession instead of
+    the one used by the outer session. Note that the ``--override-ini``
+    option is still applied to both ini files.
+
 
 Configuration
 ~~~~~~~~~~~~~

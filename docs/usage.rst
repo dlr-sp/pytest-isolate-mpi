@@ -147,8 +147,10 @@ following command line arguments to ``pytest``:
 
 --custom-ini-for-subsession
     Path to custom Pytest ini file to use for the subsession instead of
-    the one used by the outer session. Note that the ``--override-ini``
-    option is still applied to both ini files.
+    the one used by the outer session. The ``--override-ini`` option is
+    still applied to both ini files. The option is inteded for use with 
+    containerization, where some options are only applicable to the
+    part main session outside the container or subsessions within it.
 
 
 Configuration

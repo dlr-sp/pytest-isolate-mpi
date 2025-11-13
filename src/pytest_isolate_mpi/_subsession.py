@@ -5,7 +5,7 @@ import sys
 
 
 def assemble_sub_pytest_cmd(option: argparse.Namespace, nodeid: str):
-    cmd = [sys.executable, "-m", "mpi4py", "-m", "pytest"]
+    cmd = [_get_python_executable(option), "-m", "mpi4py", "-m", "pytest"]
     _add_general_options(cmd, option)
     _add_reporting_options(cmd, option)
     _add_pytest_warning_options(cmd, option)
@@ -15,6 +15,14 @@ def assemble_sub_pytest_cmd(option: argparse.Namespace, nodeid: str):
     # TODO: Coverage options
     cmd += [nodeid]  # test selection
     return cmd
+
+
+def _get_python_executable(option):
+    if option.python_executable:
+        executable = option.python_executable
+    else:
+        executable = sys.executable
+    return executable
 
 
 def _add_general_options(cmd, option):
@@ -43,7 +51,9 @@ def _add_pytest_warning_options(cmd, option):
     if option.pythonwarnings is not None:
         for warning in option.pythonwarnings:
             cmd += ["--pythonwarnings", warning]
-    if option.inifilename is not None:
+    if option.custom_ini_for_subsession:
+        cmd += ["--config-file", option.custom_ini_for_subsession]
+    elif option.inifilename is not None:
         cmd += ["--config-file", option.inifilename]
 
 

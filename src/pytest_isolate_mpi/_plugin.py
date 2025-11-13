@@ -351,6 +351,19 @@ def pytest_addoption(parser):
         default="s",
         help="Default unit for test timeouts. Defaults to seconds, if not specified.",
     )
+    group.addoption(
+        "--python-executable",
+        default=None,
+        type=str,
+        help="Path to a custom Python executable used to run subsessions.",
+    )
+    group.addoption(
+        "--custom-ini-for-subsession",
+        type=str,
+        default=None,
+        help="Path to custom Pytest ini file to use for the subsession instead of the one used by the outer session. "
+        "Note that the '--override-ini' option is still applied to both ini files.",
+    )
     parser.addini(
         "mpi_executable", type="string", default=None, help="mpi executable (e.g. 'mpirun', 'mpiexec', 'srun')"
     )

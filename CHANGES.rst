@@ -1,6 +1,17 @@
 Changelog
 =========
 
+Version 0.4
+-----------
+
+- Two command line options for the use of independent Python executables
+  and Pytest configurations in the main session and subsessions have
+  been added. This enhances the ability for use with e.g. Apptainer,
+  allowing a main session outside of a container to spawn containerized
+  subsessions. (`#33`_)
+
+.. _#33:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/33
+
 Version 0.3
 -----------
 

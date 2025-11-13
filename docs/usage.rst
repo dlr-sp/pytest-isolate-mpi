@@ -162,9 +162,8 @@ mpi_command_line_args
     By default, none are given.
 
 For example, the following ``pytest.ini`` will result in tests marked
-with ``@pytest.mark.mpi(ranks=2)`` to be launched by Slrum's ``srun`` on
-two compute nodes with 128 processes each.
-
+with ``@pytest.mark.mpi(ranks=2)`` to be launched by Slurm's ``srun`` on
+two compute nodes with 128 processes each::
 
     # pytest.ini
     mpi_executable = srun

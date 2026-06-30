@@ -35,6 +35,12 @@ import pytest
         pytest.param("test_mpi_tmp_path", {"passed": 2}, [], id="test_mpi_tmp_path"),
         pytest.param("test_no_mpi", {"passed": 1}, [], id="test_no_mpi"),
         pytest.param("test_session_scoped_fixtures", {"passed": 36}, [], id="test_cache"),
+        pytest.param(
+            "test_unpicklable_session_fixture",
+            {"passed": 4},
+            [],
+            id="test_unpicklable_session_fixture",
+        ),
     ],
 )
 def test_outcomes(pytester, test, outcomes, lines):

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import pickle
+import tempfile
 
 from _pytest.fixtures import FixtureDef
 from _pytest.fixtures import SubRequest
@@ -16,8 +17,13 @@ def _load_fixture_result(fixturedef: FixtureDef, request: SubRequest):
     if fixturedef.scope == "session" and fixturedef.argname != "comm":
         cache_file_path = _get_cache_file_path(fixturedef, request)
         if os.path.isfile(cache_file_path):
-            with open(cache_file_path, mode="rb") as f:
-                res = pickle.load(f)
+            try:
+                with open(cache_file_path, mode="rb") as f:
+                    res = pickle.load(f)
+            except (EOFError, pickle.UnpicklingError):
+                # ignore old corrupted files and re-evaluate the
+                # fixture rather than failing the test.
+                return None
             fixturedef.cached_result = (res, None, None)
             return True  # cache is loaded, do not call the fixture function
     return None  # continue calling the fixture function
@@ -28,10 +34,26 @@ def _cache_fixture_result(fixturedef: FixtureDef, request: SubRequest):
     if fixturedef.scope == "session" and fixturedef.argname != "comm":
         cache_file_path = _get_cache_file_path(fixturedef, request)
         if not os.path.isfile(cache_file_path):
-            os.makedirs(os.path.dirname(cache_file_path), exist_ok=True)  # pylint: disable=consider-using-with
-            with open(cache_file_path, mode="wb") as f:
-                res = fixturedef.cached_result[0]
-                pickle.dump(res, f)
+            res = fixturedef.cached_result[0]
+            try:
+                payload = pickle.dumps(res)
+
+            # tmp_path_factory (>= 9.1), locks, open files, lambdas, ... aren't picklable.
+            except (pickle.PicklingError, AttributeError, TypeError):
+                return  # skip caching; the fixture is re-evaluated in each subsession
+
+            cache_dir = os.path.dirname(cache_file_path)
+            os.makedirs(cache_dir, exist_ok=True)
+            fd, tmp_path = tempfile.mkstemp(dir=cache_dir)
+            try:
+                with os.fdopen(fd, mode="wb") as f:
+                    f.write(payload)
+                os.replace(tmp_path, cache_file_path)
+            except BaseException:  # pylint: disable=broad-exception-caught
+                # Remove the temporary file on any error so we never leave a stray file behind.
+                if os.path.isfile(tmp_path):
+                    os.remove(tmp_path)
+                raise
 
 
 def _get_cache_file_path(fixturedef: FixtureDef, request: SubRequest) -> str:

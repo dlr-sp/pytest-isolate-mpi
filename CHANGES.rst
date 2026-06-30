@@ -10,6 +10,14 @@ Version 0.4
   allowing a main session outside of a container to spawn containerized
   subsessions. (`#33`_)
 
+- Compatibility with Pytest >= 9.1 has been restored. Session-scoped
+  fixtures whose result cannot be pickled (such as Pytest's
+  ``tmp_path_factory``, which is no longer picklable since Pytest 9.1) are
+  now skipped by the fixture cache and re-evaluated in each subsession,
+  instead of crashing the run. The cache is also written atomically, so a
+  failed write can no longer leave a truncated file behind that would make
+  subsequent subsessions fail with ``EOFError``.
+
 .. _#33:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/33
 
 Version 0.3

@@ -43,6 +43,33 @@ This test will always fail an MPI process 0:
 All tests not marked with the ``mpi`` mark are executed as usual in the
 main ``pytest`` session.
 
+Controlling OpenMP threads
+--------------------------
+
+The number o OpenMP threads used by each MPI process can be set with the
+optional ``threads`` argument of the ``mpi`` mark:
+
+.. code-block:: python
+
+    import os 
+
+    import pytest
+
+    @pytest.mark.mpi(ranks=2, threads=4)
+    def test_hybrid_parallel_code(mpi_ranks):
+        assert os.environ["OMP_NUM_THREADS"] =="4"
+
+For this example, ``pytest-isolate-mpi`` launches two MPI processes and sets
+``OMP_NUM_THREADS=4`` in each process.
+
+The ``threads`` argument must be a positive integer. If it is omitted,
+``pytest-isolate-mpi`` does not modify ``OMP_NUM_THREADS`` and the value
+is inherited from the parent environment.
+
+The option only applies to isolated MPI test subprocesses. It does not modify
+the environment of the main Pytest process when MPI isolation is disabled.
+
+
 Parametrizing the Number of MPI Processes
 -----------------------------------------
 

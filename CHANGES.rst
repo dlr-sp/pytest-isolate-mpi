@@ -3,6 +3,8 @@ Changelog
 
 Version 0.4
 -----------
+- The ``mpi`` marker now accepts an optional ``threads`` argument. 
+  When set, ``OMP_NUM_THREADS`` is configured for each isolated MPI process.
 
 - Two command line options for the use of independent Python executables
   and Pytest configurations in the main session and subsessions have

@@ -27,6 +27,7 @@ from ._constants import MPI_ENV_HINTS
 from ._constants import NO_MPI_ISOLATION_ARG
 from ._constants import TIME_UNIT_CONVERSION
 from ._constants import VERBOSE_MPI_ARG
+from ._constants import OMP_NUM_THREADS_ENV
 from ._fixturecache import _load_fixture_result
 from ._fixturecache import _cache_fixture_result
 from .fixtures import comm_fixture  # pylint: disable=unused-import
@@ -120,6 +121,14 @@ class MPIPlugin:
     def pytest_generate_tests(self, metafunc):
         """Extend the marker @pytest.mark.mpi such that we have parametrization of the tests w.r.t. # ranks."""
         for mark in metafunc.definition.iter_markers(name="mpi"):
+            threads = mark.kwargs.get("threads")
+
+            if threads is not None:
+                if type(threads) is not int or threads <= 0:
+                    pytest.exit(
+                        "Numer of OpenMP threads must be a positive integer",
+                        pytest.ExitCode.USAGE_ERROR,
+                    )
             ranks = mark.kwargs.get("ranks")
             if ranks is not None:
                 if isinstance(ranks, collections.abc.Sequence):
@@ -205,6 +214,8 @@ class MPIPlugin:
 
     def _mpi_runtestprotocol(self, item):  # pylint: disable=too-many-locals,too-many-branches
         mpi_ranks = 1
+        threads = None
+
         for fixture in item.fixturenames:
             if fixture == "mpi_ranks" and "mpi_ranks" in item.callspec.params:
                 mpi_ranks = item.callspec.params["mpi_ranks"]
@@ -212,6 +223,8 @@ class MPIPlugin:
         timeout = None
         timeout_in = ("NaN", "N/A")
         for mark in item.iter_markers(name="mpi"):
+            threads = mark.kwargs.get("threads")
+
             timeout = mark.kwargs.get("timeout", self._mpi_default_test_timeout)
             if timeout is not None:
                 unit = mark.kwargs.get("unit", self._mpi_default_test_timeout_unit)
@@ -234,6 +247,8 @@ class MPIPlugin:
             run_env = os.environ.copy()
             run_env[ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN] = "1"
             run_env["PYTEST_MPI_REPORTS_PATH"] = tmpdir
+            if threads is not None:
+                run_env[OMP_NUM_THREADS_ENV] = str(threads)
 
             try:
                 # FIXME: disable capturing if -s is passed to pytest

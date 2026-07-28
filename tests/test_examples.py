@@ -103,7 +103,7 @@ def test_invalid_thread_count(pytester, threads):
     combined_output = result.stdout.str() + result.stderr.str()
 
     assert result.ret != pytest.ExitCode.OK
-    assert "Numer of OpenMP threads must be a positive integer" in combined_output
+    assert "Number of OpenMP threads must be a positive integer" in combined_output
 
 
 def test_thread_count_does_not_modify_outer_environ(

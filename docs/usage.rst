@@ -46,7 +46,7 @@ main ``pytest`` session.
 Controlling OpenMP threads
 --------------------------
 
-The number o OpenMP threads used by each MPI process can be set with the
+The number of OpenMP threads used by each MPI process can be set with the
 optional ``threads`` argument of the ``mpi`` mark:
 
 .. code-block:: python

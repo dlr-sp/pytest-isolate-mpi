@@ -1,4 +1,3 @@
-# pylint: disable=unused-argument,redefined-outer-name
 import threading
 
 import pytest
@@ -10,12 +9,14 @@ def unpicklable():
 
 
 @pytest.mark.mpi(ranks=2)
-def test_unpicklable_fixture_is_not_cached(mpi_ranks, comm, unpicklable):
+@pytest.mark.usefixtures("unpicklable")
+def test_unpicklable_fixture_is_not_cached(mpi_ranks, comm):
     # First subsession: evaluates the fixture, the plugin skips caching it.
-    assert unpicklable is not None
+    assert comm.size == mpi_ranks
 
 
 @pytest.mark.mpi(ranks=2)
-def test_unpicklable_fixture_is_reevaluated(mpi_ranks, comm, unpicklable):
+@pytest.mark.usefixtures("unpicklable")
+def test_unpicklable_fixture_is_reevaluated(mpi_ranks, comm):
     # Later subsession: finds no cache file and evaluates the fixture again.
-    assert unpicklable is not None
+    assert comm.size == mpi_ranks

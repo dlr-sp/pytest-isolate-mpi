@@ -1,14 +1,4 @@
 # pylint: disable=unused-argument,redefined-outer-name
-"""Session fixtures whose values cannot be pickled are not cached across
-subsessions but re-evaluated per test, like ``comm``.
-
-Each MPI test runs in its own forked subsession, so this scenario inherently
-needs two tests: the first exercises the cache write path (the plugin must
-skip caching the unpicklable value instead of crashing), the second exercises
-the cache read path in a later subsession (no cache file, so the fixture is
-evaluated again).
-"""
-
 import threading
 
 import pytest

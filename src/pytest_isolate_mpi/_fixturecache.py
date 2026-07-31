@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import os
 import pickle
-import tempfile
 
 from _pytest.fixtures import FixtureDef
 from _pytest.fixtures import SubRequest
@@ -39,21 +38,12 @@ def _cache_fixture_result(fixturedef: FixtureDef, request: SubRequest):
                 payload = pickle.dumps(res)
 
             # tmp_path_factory (>= 9.1), locks, open files, lambdas, ... aren't picklable.
-            except (pickle.PicklingError, AttributeError, TypeError):
+            except Exception:  # pylint: disable=broad-exception-caught
                 return  # skip caching; the fixture is re-evaluated in each subsession
 
-            cache_dir = os.path.dirname(cache_file_path)
-            os.makedirs(cache_dir, exist_ok=True)
-            fd, tmp_path = tempfile.mkstemp(dir=cache_dir)
-            try:
-                with os.fdopen(fd, mode="wb") as f:
-                    f.write(payload)
-                os.replace(tmp_path, cache_file_path)
-            except BaseException:  # pylint: disable=broad-exception-caught
-                # Remove the temporary file on any error so we never leave a stray file behind.
-                if os.path.isfile(tmp_path):
-                    os.remove(tmp_path)
-                raise
+            os.makedirs(os.path.dirname(cache_file_path), exist_ok=True)
+            with open(cache_file_path, mode="wb") as f:
+                f.write(payload)
 
 
 def _get_cache_file_path(fixturedef: FixtureDef, request: SubRequest) -> str:

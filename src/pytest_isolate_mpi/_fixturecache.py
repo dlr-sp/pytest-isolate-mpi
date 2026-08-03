@@ -37,7 +37,10 @@ def _cache_fixture_result(fixturedef: FixtureDef, request: SubRequest):
             try:
                 payload = pickle.dumps(res)
 
-            # tmp_path_factory (>= 9.1), locks, open files, lambdas, ... aren't picklable.
+            # Pickling failures are not confined to pickle.PicklingError: Pytest's own
+            # tmp_path_factory raises AttributeError since Pytest 9.1, locks and open
+            # files raise TypeError, and a custom __reduce__ may raise anything at all.
+            # A fixture that cannot be cached must never fail the test run.
             except Exception:  # pylint: disable=broad-exception-caught
                 return  # skip caching; the fixture is re-evaluated in each subsession
 

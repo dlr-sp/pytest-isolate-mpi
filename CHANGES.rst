@@ -14,7 +14,10 @@ Version 0.4
   truncated file behind that would make subsequent subsessions fail with
   ``EOFError``. (`#36`_)
 
-- The ``mpi`` marker now accepts an optional ``threads`` argument. 
+- Python 3.10 or newer and Pytest 7.3 or newer are now required, matching
+  the versions covered by the CI test matrix.
+
+- The ``mpi`` marker now accepts an optional ``threads`` argument.
   When set, ``OMP_NUM_THREADS`` is configured for each isolated MPI process.
 
 - Two command line options for the use of independent Python executables

@@ -34,7 +34,7 @@ class _CachePickler(pickle.Pickler):
         return NotImplemented
 
 
-def _dumps(obj) -> bytes:
+def _pickle_dumps(obj) -> bytes:
     """Pickles ``obj`` with the fixture-result recipes of ``_CachePickler``."""
     buffer = io.BytesIO()
     _CachePickler(buffer).dump(obj)
@@ -65,11 +65,9 @@ def _cache_fixture_result(fixturedef: FixtureDef, request: SubRequest):
         if not os.path.isfile(cache_file_path):
             res = fixturedef.cached_result[0]
             try:
-                payload = _dumps(res)
+                payload = _pickle_dumps(res)
 
-            # Pickling failures are not confined to pickle.PicklingError: locks and
-            # open files raise TypeError, and a custom __reduce__ may raise anything
-            # at all. A fixture that cannot be cached must never fail the test run.
+            # A fixture that cannot be cached must never fail the test run.
             except Exception:  # pylint: disable=broad-exception-caught
                 return  # skip caching; the fixture is re-evaluated in each subsession
 

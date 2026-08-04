@@ -49,7 +49,7 @@ def _load_fixture_result(fixturedef: FixtureDef, request: SubRequest):
             try:
                 with open(cache_file_path, mode="rb") as f:
                     res = pickle.load(f)
-            except (EOFError, pickle.UnpicklingError):
+            except Exception:  # pylint: disable=broad-exception-caught
                 # ignore old corrupted files and re-evaluate the
                 # fixture rather than failing the test.
                 return None

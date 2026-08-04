@@ -39,6 +39,7 @@ import pytest
         pytest.param("test_session_scoped_fixtures", {"passed": 36}, [], id="test_cache"),
         pytest.param("test_omp_num_threads", {"passed": 3}, [], id="test_omp_num_threads"),
         pytest.param("test_unpicklable_session_fixture", {"passed": 4}, [], id="test_unpicklable_session_fixture"),
+        pytest.param("test_tmp_path_factory_cached", {"passed": 4}, [], id="test_tmp_path_factory_cached"),
     ],
 )
 def test_outcomes(pytester, test, outcomes, lines):

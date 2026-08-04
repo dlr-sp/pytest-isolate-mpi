@@ -4,11 +4,41 @@ Functionalities for caching fixture results across MPI-sessions.
 
 from __future__ import annotations
 
+import io
 import os
 import pickle
+from contextlib import ExitStack
 
+import pytest
 from _pytest.fixtures import FixtureDef
 from _pytest.fixtures import SubRequest
+
+
+def _restore_tmp_path_factory(state: dict) -> pytest.TempPathFactory:
+    """Recreates a ``TempPathFactory`` from its pickled state."""
+    factory = pytest.TempPathFactory.__new__(pytest.TempPathFactory)
+    factory.__dict__.update(state)
+    # Cleanup of the base temp directory stays with the session which created
+    # it; a restored factory only needs an empty stack to be operational.
+    factory._exit_stack = ExitStack()  # pylint: disable=protected-access
+    return factory
+
+
+class _CachePickler(pickle.Pickler):
+    """Pickler which knows how to serialize Pytest's ``TempPathFactory``."""
+
+    def reducer_override(self, obj):
+        if isinstance(obj, pytest.TempPathFactory):
+            state = {name: value for name, value in obj.__dict__.items() if name != "_exit_stack"}
+            return _restore_tmp_path_factory, (state,)
+        return NotImplemented
+
+
+def _dumps(obj) -> bytes:
+    """Pickles ``obj`` with the fixture-result recipes of ``_CachePickler``."""
+    buffer = io.BytesIO()
+    _CachePickler(buffer).dump(obj)
+    return buffer.getvalue()
 
 
 def _load_fixture_result(fixturedef: FixtureDef, request: SubRequest):
@@ -35,12 +65,11 @@ def _cache_fixture_result(fixturedef: FixtureDef, request: SubRequest):
         if not os.path.isfile(cache_file_path):
             res = fixturedef.cached_result[0]
             try:
-                payload = pickle.dumps(res)
+                payload = _dumps(res)
 
-            # Pickling failures are not confined to pickle.PicklingError: Pytest's own
-            # tmp_path_factory raises AttributeError since Pytest 9.1, locks and open
-            # files raise TypeError, and a custom __reduce__ may raise anything at all.
-            # A fixture that cannot be cached must never fail the test run.
+            # Pickling failures are not confined to pickle.PicklingError: locks and
+            # open files raise TypeError, and a custom __reduce__ may raise anything
+            # at all. A fixture that cannot be cached must never fail the test run.
             except Exception:  # pylint: disable=broad-exception-caught
                 return  # skip caching; the fixture is re-evaluated in each subsession
 

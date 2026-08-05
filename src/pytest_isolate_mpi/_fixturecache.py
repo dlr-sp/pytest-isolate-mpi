@@ -49,6 +49,9 @@ def _load_fixture_result(fixturedef: FixtureDef, request: SubRequest):
             try:
                 with open(cache_file_path, mode="rb") as f:
                     res = pickle.load(f)
+            # Unpickling runs arbitrary ``__setstate__``/``__reduce__`` code of the
+            # cached objects, so a corrupt or stale file can surface as any
+            # exception type, not just ``EOFError``/``UnpicklingError``.
             except Exception:  # pylint: disable=broad-exception-caught
                 # ignore old corrupted files and re-evaluate the
                 # fixture rather than failing the test.
@@ -68,6 +71,9 @@ def _cache_fixture_result(fixturedef: FixtureDef, request: SubRequest):
                 payload = _pickle_dumps(res)
 
             # A fixture that cannot be cached must never fail the test run.
+            # Pickling calls arbitrary ``__reduce__``/``__getstate__`` code of the
+            # fixture result, which may raise anything (``TypeError``,
+            # ``AttributeError``, ``RecursionError``, ...) besides ``PicklingError``.
             except Exception:  # pylint: disable=broad-exception-caught
                 return  # skip caching; the fixture is re-evaluated in each subsession
 

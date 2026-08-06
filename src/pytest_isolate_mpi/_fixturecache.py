@@ -4,11 +4,41 @@ Functionalities for caching fixture results across MPI-sessions.
 
 from __future__ import annotations
 
+import io
 import os
 import pickle
+from contextlib import ExitStack
 
+import pytest
 from _pytest.fixtures import FixtureDef
 from _pytest.fixtures import SubRequest
+
+
+def _restore_tmp_path_factory(state: dict) -> pytest.TempPathFactory:
+    """Recreates a ``TempPathFactory`` from its pickled state."""
+    factory = pytest.TempPathFactory.__new__(pytest.TempPathFactory)
+    factory.__dict__.update(state)
+    # Cleanup of the base temp directory stays with the session which created
+    # it; a restored factory only needs an empty stack to be operational.
+    factory._exit_stack = ExitStack()  # pylint: disable=protected-access
+    return factory
+
+
+class _CachePickler(pickle.Pickler):
+    """Pickler which knows how to serialize Pytest's ``TempPathFactory``."""
+
+    def reducer_override(self, obj):
+        if isinstance(obj, pytest.TempPathFactory):
+            state = {name: value for name, value in obj.__dict__.items() if name != "_exit_stack"}
+            return _restore_tmp_path_factory, (state,)
+        return NotImplemented
+
+
+def _pickle_dumps(obj) -> bytes:
+    """Pickles ``obj`` with the fixture-result recipes of ``_CachePickler``."""
+    buffer = io.BytesIO()
+    _CachePickler(buffer).dump(obj)
+    return buffer.getvalue()
 
 
 def _load_fixture_result(fixturedef: FixtureDef, request: SubRequest):
@@ -16,8 +46,16 @@ def _load_fixture_result(fixturedef: FixtureDef, request: SubRequest):
     if fixturedef.scope == "session" and fixturedef.argname != "comm":
         cache_file_path = _get_cache_file_path(fixturedef, request)
         if os.path.isfile(cache_file_path):
-            with open(cache_file_path, mode="rb") as f:
-                res = pickle.load(f)
+            try:
+                with open(cache_file_path, mode="rb") as f:
+                    res = pickle.load(f)
+            # Unpickling runs arbitrary ``__setstate__``/``__reduce__`` code of the
+            # cached objects, so a corrupt or stale file can surface as any
+            # exception type, not just ``EOFError``/``UnpicklingError``.
+            except Exception:  # pylint: disable=broad-exception-caught
+                # ignore old corrupted files and re-evaluate the
+                # fixture rather than failing the test.
+                return None
             fixturedef.cached_result = (res, None, None)
             return True  # cache is loaded, do not call the fixture function
     return None  # continue calling the fixture function
@@ -28,10 +66,20 @@ def _cache_fixture_result(fixturedef: FixtureDef, request: SubRequest):
     if fixturedef.scope == "session" and fixturedef.argname != "comm":
         cache_file_path = _get_cache_file_path(fixturedef, request)
         if not os.path.isfile(cache_file_path):
-            os.makedirs(os.path.dirname(cache_file_path), exist_ok=True)  # pylint: disable=consider-using-with
+            res = fixturedef.cached_result[0]
+            try:
+                payload = _pickle_dumps(res)
+
+            # A fixture that cannot be cached must never fail the test run.
+            # Pickling calls arbitrary ``__reduce__``/``__getstate__`` code of the
+            # fixture result, which may raise anything (``TypeError``,
+            # ``AttributeError``, ``RecursionError``, ...) besides ``PicklingError``.
+            except Exception:  # pylint: disable=broad-exception-caught
+                return  # skip caching; the fixture is re-evaluated in each subsession
+
+            os.makedirs(os.path.dirname(cache_file_path), exist_ok=True)
             with open(cache_file_path, mode="wb") as f:
-                res = fixturedef.cached_result[0]
-                pickle.dump(res, f)
+                f.write(payload)
 
 
 def _get_cache_file_path(fixturedef: FixtureDef, request: SubRequest) -> str:

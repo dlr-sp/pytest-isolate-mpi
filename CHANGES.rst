@@ -3,7 +3,21 @@ Changelog
 
 Version 0.4
 -----------
-- The ``mpi`` marker now accepts an optional ``threads`` argument. 
+- Compatibility with Pytest >= 9.1 has been restored. Pytest's
+  ``tmp_path_factory``, which is no longer picklable since Pytest 9.1, is
+  serialized with a dedicated recipe so it remains cached and all
+  subsessions keep sharing one base temporary directory. Session-scoped
+  fixtures whose result still cannot be pickled are skipped by the fixture
+  cache and re-evaluated in each subsession, instead of crashing the run.
+  The cache file is only created once the fixture result has been
+  serialized successfully, so a failed write can no longer leave a
+  truncated file behind that would make subsequent subsessions fail with
+  ``EOFError``. (`#36`_)
+
+- Python 3.10 or newer and Pytest 7.3 or newer are now required, matching
+  the versions covered by the CI test matrix.
+
+- The ``mpi`` marker now accepts an optional ``threads`` argument.
   When set, ``OMP_NUM_THREADS`` is configured for each isolated MPI process.
 
 - Two command line options for the use of independent Python executables
@@ -13,6 +27,7 @@ Version 0.4
   subsessions. (`#33`_)
 
 .. _#33:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/33
+.. _#36:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/36
 
 Version 0.3
 -----------

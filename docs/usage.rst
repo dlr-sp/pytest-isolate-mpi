@@ -252,7 +252,16 @@ default ``function`` scope is limited for MPI-parallel tests:
   caches its own dedicated fixture. Sharing fixtures between tests of
   differently sized communicators and non-MPI/MPI tests is not possible.
   Fixtures are serialized with the :mod:`pickle` module. Please note that
-  not all Python objects support pickling.
+  not all Python objects support pickling. Pytest's own ``tmp_path_factory``
+  holds unpicklable cleanup machinery since Pytest 9.1; the cache serializes
+  it with a dedicated recipe so all sub sessions keep sharing one base
+  temporary directory.
+
+  Any other session-scoped fixture whose result cannot be pickled is
+  skipped by the cache rather than failing the test run. Such a fixture is
+  re-evaluated in every sub session, as the ``comm`` fixture is, and
+  thus effectively behaves as if it were function-scoped: any state
+  it holds is not shared between MPI-parallel tests.
 
 * ``class``, ``module``, and ``package``: Fixtures for these scopes are
   re-created for each MPI-parallel tests. Such fixtures effectively

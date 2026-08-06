@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 name = "pytest-isolate-mpi"
 description = "pytest-isolate-mpi allows for MPI-parallel tests being executed in a segfault and MPI_Abort safe manner"
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {file = "LICENSE"}
 dynamic = ["version"]
 keywords = []
@@ -22,7 +22,7 @@ classifiers = [
   "Framework :: Pytest",
 ]
 dependencies = [
-    "pytest >= 5",
+    "pytest >= 7.3",
     "mpi4py",
 ]
 

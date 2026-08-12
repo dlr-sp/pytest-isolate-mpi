@@ -39,6 +39,7 @@ dev = [
     "black",
     "pycodestyle",
     "watchdog",
+    "pytest-forked"
 ]
 
 

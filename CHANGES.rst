@@ -26,8 +26,13 @@ Version 0.4
   allowing a main session outside of a container to spawn containerized
   subsessions. (`#33`_)
 
+- Fixed compatibilty with ``pytest-forked`` so that non-MPI tests can still be
+  executed with ``--forked`` when ``pytest-isolate-mpi`` is installed. (`#30`_)
+
+
 .. _#33:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/33
 .. _#36:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/36
+.. _#30:   https://github.com/dlr-sp/pytest-isolate-mpi/pull/30
 
 Version 0.3
 -----------

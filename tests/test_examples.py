@@ -128,3 +128,17 @@ def test_thread_count_does_not_modify_outer_environ(
 
     result.assert_outcomes(passed=2)
     assert os.environ["OMP_NUM_THREADS"] == "9"
+
+
+def test_non_mpi_test_respects_forked(pytester):
+    pytester.makepyfile("""
+        import os
+
+        parent_pid = os.getpid()
+
+        def test_runs_in_fork():
+            assert os.getpid() != parent_pid
+        """)
+
+    result = pytester.runpytest("--forked", "-v")
+    result.assert_outcomes(passed=1)

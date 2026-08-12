@@ -170,16 +170,15 @@ class MPIPlugin:
 
     @pytest.hookimpl(tryfirst=True)
     def pytest_runtest_protocol(self, item):
-        ihook = item.ihook
-        ihook.pytest_runtest_logstart(nodeid=item.nodeid, location=item.location)
-
         if self._is_forked_mpi_environment:
             reports = self._mpi_runtestprococol_inner(item)
+        elif not self._no_mpi_isolation and "mpi_ranks" in item.fixturenames:
+            reports = self._mpi_runtestprotocol(item)
         else:
-            if not self._no_mpi_isolation and "mpi_ranks" in item.fixturenames:
-                reports = self._mpi_runtestprotocol(item)
-            else:
-                reports = runner.runtestprotocol(item, log=False)
+            return None
+
+        ihook = item.ihook
+        ihook.pytest_runtest_logstart(nodeid=item.nodeid, location=item.location)
 
         for rep in reports:
             ihook.pytest_runtest_logreport(report=rep)

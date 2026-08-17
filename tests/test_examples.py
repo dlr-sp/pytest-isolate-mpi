@@ -7,14 +7,12 @@ import pytest
     ["test", "outcomes", "lines"],
     [
         pytest.param("test_basic", {"passed": 2}, [], id="test_basic"),
-        pytest.param(
-            "test_fail", {"failed": 2}, [rf"FAILED .*test_fail\[2\]\[rank={i}\].*" for i in range(2)], id="test_fail"
-        ),
+        pytest.param("test_fail", {"failed": 2}, [r"FAILED .*test_fail\[2\].*"] * 2, id="test_fail"),
         pytest.param("test_xfail", {"xfailed": 2}, [], id="test_xfail"),
         pytest.param(
             "test_one_failing_rank",
             {"passed": 1, "failed": 1},
-            [r"FAILED .*test_one_failing_rank\[2\]\[rank=0\].*"],
+            [r"FAILED .*test_one_failing_rank\[2\].*"],
             id="test_one_failing_rank",
         ),
         pytest.param("test_one_aborting_rank", {"passed": 1, "failed": 1}, [], id="test_one_aborting_rank"),

@@ -29,7 +29,15 @@ Version 0.4
   allowing a main session outside of a container to spawn containerized
   subsessions. (`#33`_)
 
+<<<<<<< HEAD
 
+=======
+- Fixed VS Code test execution for MPI tests by preventing
+  ``vscode_pytest`` from being forwarded to MPI subprocesses and by
+  keeping report node IDs stable across MPI ranks. (`#31`_)
+
+.. _#31:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/31
+>>>>>>> c9842db (Fix VS Code MPI test execution)
 .. _#33:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/33
 .. _#36:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/36
 .. _#38:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/38

@@ -3,6 +3,10 @@ Changelog
 
 Version 0.4
 -----------
+- Fixed VS Code test execution for MPI tests by preventing
+  ``vscode_pytest`` from being forwarded to MPI subprocesses and by
+  keeping report node IDs stable across MPI ranks. (`#39`_)
+
 - Fixed compatibilty with ``pytest-forked`` so that non-MPI tests can still be
   executed with ``--forked`` when ``pytest-isolate-mpi`` is installed. (`#38`_)
 
@@ -29,10 +33,10 @@ Version 0.4
   allowing a main session outside of a container to spawn containerized
   subsessions. (`#33`_)
 
-
 .. _#33:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/33
 .. _#36:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/36
 .. _#38:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/38
+.. _#39:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/39
 
 Version 0.3
 -----------

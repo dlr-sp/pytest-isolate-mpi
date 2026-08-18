@@ -67,7 +67,8 @@ def _add_collection_options(cmd, option):
 
 def _add_test_session_options(cmd, option):
     for plugin in option.plugins:
-        cmd += ["-p", plugin]
+        if plugin != "vscode_pytest":
+            cmd += ["-p", plugin]
     if option.traceconfig:
         cmd += ["--trace-config"]
     if option.override_ini is not None:

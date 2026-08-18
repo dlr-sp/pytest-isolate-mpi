@@ -199,7 +199,8 @@ class MPIPlugin:
             if report.location is not None:
                 fspath, lineno, domain = report.location
                 report.location = fspath, lineno, f"{domain}[rank={comm.rank}]"
-                # report.nodeid = f"{report.nodeid}[rank={comm.rank}]"
+                if "vscode_pytest" not in item.config.option.plugins:
+                    report.nodeid = f"{report.nodeid}[rank={comm.rank}]"
             setattr(report, "rank", comm.rank)
         if not os.path.isdir(os.environ["PYTEST_MPI_REPORTS_PATH"]):
             raise RuntimeError(

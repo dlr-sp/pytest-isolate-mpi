@@ -3,6 +3,9 @@ Changelog
 
 Version 0.4
 -----------
+- Fixed compatibilty with ``pytest-forked`` so that non-MPI tests can still be
+  executed with ``--forked`` when ``pytest-isolate-mpi`` is installed. (`#38`_)
+
 - Compatibility with Pytest >= 9.1 has been restored. Pytest's
   ``tmp_path_factory``, which is no longer picklable since Pytest 9.1, is
   serialized with a dedicated recipe so it remains cached and all
@@ -26,8 +29,10 @@ Version 0.4
   allowing a main session outside of a container to spawn containerized
   subsessions. (`#33`_)
 
+
 .. _#33:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/33
 .. _#36:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/36
+.. _#38:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/38
 
 Version 0.3
 -----------

@@ -3,6 +3,10 @@ Changelog
 
 Version 0.4
 -----------
+- Fixed running regular tests inside an existing MPI environment when
+  ``pytest-isolate-mpi`` is loaded. The nested MPI environment check is
+  now only performed when MPI isolation is actually used.
+  
 - Fixed compatibilty with ``pytest-forked`` so that non-MPI tests can still be
   executed with ``--forked`` when ``pytest-isolate-mpi`` is installed. (`#38`_)
 

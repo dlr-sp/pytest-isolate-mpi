@@ -31,6 +31,7 @@ from ._constants import OMP_NUM_THREADS_ENV
 from ._fixturecache import _load_fixture_result
 from ._fixturecache import _cache_fixture_result
 from .fixtures import comm_fixture  # pylint: disable=unused-import
+from .fixtures import mpi_ranks_fixture  # pylint: disable=unused-import
 from .fixtures import mpi_tmpdir_fixture  # pylint: disable=unused-import
 from .fixtures import mpi_tmp_path_fixture  # pylint: disable=unused-import
 from ._subsession import assemble_sub_pytest_cmd
@@ -124,7 +125,7 @@ class MPIPlugin:
             threads = mark.kwargs.get("threads")
 
             if threads is not None:
-                if type(threads) is not int or threads <= 0:
+                if isinstance(threads, int) or threads <= 0:
                     pytest.exit(
                         "Number of OpenMP threads must be a positive integer",
                         pytest.ExitCode.USAGE_ERROR,
@@ -145,7 +146,8 @@ class MPIPlugin:
                     if not isinstance(rank, int) or rank <= 0:
                         pytest.exit("Number of MPI ranks must be a positive integer", pytest.ExitCode.USAGE_ERROR)
 
-                metafunc.parametrize("mpi_ranks", list_of_ranks)  # maybe make this scope='session'?
+                if "mpi_ranks" in metafunc.fixturenames:
+                    metafunc.parametrize("mpi_ranks", list_of_ranks)
 
     def pytest_runtest_setup(self, item):
         """
@@ -172,7 +174,7 @@ class MPIPlugin:
     def pytest_runtest_protocol(self, item):
         if self._is_forked_mpi_environment:
             reports = self._mpi_runtestprococol_inner(item)
-        elif not self._no_mpi_isolation and "mpi_ranks" in item.fixturenames:
+        elif not self._no_mpi_isolation and item.get_closest_marker("mpi"):
             reports = self._mpi_runtestprotocol(item)
         else:
             return None

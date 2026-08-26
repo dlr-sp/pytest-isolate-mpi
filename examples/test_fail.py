@@ -2,6 +2,6 @@ import pytest
 
 
 @pytest.mark.mpi(ranks=2)
-def test_fail(mpi_ranks):  # pylint: disable=unused-argument
+def test_fail():
     """Simple failing test."""
     assert False

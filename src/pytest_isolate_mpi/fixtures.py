@@ -46,3 +46,17 @@ def mpi_tmp_path_fixture(tmp_path, comm) -> Path:
     name = str(tmp_path) if comm.rank == 0 else None
     name = comm.bcast(name, root=0)
     return Path(name)
+
+
+@pytest.fixture(name="mpi_ranks", autouse=True)
+def mpi_ranks_fixture(request) -> int:
+    """Provides the number of MPI ranks for the current test.
+
+    The value is supplied by parametrization of the ``mpi_ranks`` fixture
+    performed by ``pytest-isolate-mpi`` for tests carrying the ``mpi`` marker.
+    For tests that are not parametrized with it (i.g. non-MPI tests) a
+    default value of ``1`` is returned.
+    """
+    if hasattr(request, "param"):
+        return request.param
+    return 1

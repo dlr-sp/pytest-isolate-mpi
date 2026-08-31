@@ -3,6 +3,12 @@ Changelog
 
 Version 0.4
 -----------
+
+- The ``mpi_ranks`` test argument is now optional. A new autouse
+  ``mpi_ranks`` fixture provides the number of MPI processes for each
+  test, so MPI tests no longer need to declare this argument when they
+  do not use it. (`#43`_)
+
 - Fixed running non-MPI tests inside an existing MPI environment when
   ``pytest-isolate-mpi`` is loaded. The nested MPI environment check is
   now only performed when MPI isolation is actually used. (`#42`_)
@@ -33,11 +39,11 @@ Version 0.4
   allowing a main session outside of a container to spawn containerized
   subsessions. (`#33`_)
 
-
 .. _#33:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/33
 .. _#36:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/36
 .. _#38:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/38
 .. _#42:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/42
+.. _#43:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/43
 
 Version 0.3
 -----------

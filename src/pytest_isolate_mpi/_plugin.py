@@ -113,12 +113,6 @@ class MPIPlugin:
             mpi_command_line_args=config.getini("mpi_command_line_args"),
         )
 
-        # double check whether MPI environment variables are residing in the forked env
-        if not self._is_forked_mpi_environment:
-            for env in MPI_ENV_HINTS:
-                if os.getenv(env):
-                    pytest.exit("forked MPI tests cannot be run in an MPI environment", pytest.ExitCode.USAGE_ERROR)
-
     def pytest_generate_tests(self, metafunc):
         """Extend the marker @pytest.mark.mpi such that we have parametrization of the tests w.r.t. # ranks."""
         for mark in metafunc.definition.iter_markers(name="mpi"):
@@ -214,6 +208,11 @@ class MPIPlugin:
         return reports
 
     def _mpi_runtestprotocol(self, item):  # pylint: disable=too-many-locals,too-many-branches
+        # double check whether MPI environment variables are residing in the forked env
+        if not self._is_forked_mpi_environment:
+            for env in MPI_ENV_HINTS:
+                if os.getenv(env):
+                    pytest.exit("forked MPI tests cannot be run in an MPI environment", pytest.ExitCode.USAGE_ERROR)
         mpi_ranks = 1
         threads = None
 

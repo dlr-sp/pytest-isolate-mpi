@@ -37,7 +37,7 @@ Version 0.4
 .. _#33:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/33
 .. _#36:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/36
 .. _#38:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/38
-.. _#42   https://github.com/dlr-sp/pytest-isolate-mpi/pull/42
+.. _#42:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/42
 
 Version 0.3
 -----------

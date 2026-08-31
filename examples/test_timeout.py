@@ -4,7 +4,7 @@ import pytest
 
 
 @pytest.mark.mpi(ranks=2, timeout=5, unit="s")
-def test_timeout(mpi_ranks, comm):  # pylint: disable=unused-argument
+def test_timeout(comm):
     rank = comm.rank
     # we sleep 10 times to be larger than the timeout set for this test
     for _ in range(10):

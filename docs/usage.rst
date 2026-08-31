@@ -12,8 +12,7 @@ To create a MPI-parallel test, its test function must be marked with the
     :linenos:
 
 The number of MPI processes to be used for the test must be set via the
-required ``ranks`` argument. All MPI tests need to have an ``mpi_ranks``
-parameter as shown in the example.
+required ``ranks`` argument.
 
 For any test carrying the ``mpi`` mark, ``pytest-isolate-mpi`` will
 launch an MPI job with the requested amount of processes. In this MPI
@@ -51,7 +50,7 @@ optional ``threads`` argument of the ``mpi`` mark:
 
 .. code-block:: python
 
-    import os 
+    import os
 
     import pytest
 
@@ -79,11 +78,19 @@ run multiple times with each requested number of MPI processes in turn
 .. literalinclude:: ../examples/test_number_of_processes_matches_ranks.py
     :linenos:
 
-Here, for each parametrization a matching number of test reports is
+Internally, ``pytest-isolate-mpi`` `parametrizes`_ the ``mpi_ranks`` fixture,
+which stores the number of MPI ranks for each test run.  ``mpi_ranks`` is an
+`autouse`_ fixture which does not have to be requested explicitly as shown in
+the example.
+
+When executed, for each parametrization a matching number of test reports is
 produced:
 
 .. literalinclude:: ../examples/test_number_of_processes_matches_ranks.py.out
     :language: output
+
+.. _parametrizes: https://docs.pytest.org/en/stable/how-to/parametrize.html#pytest-mark-parametrize-parametrizing-test-functions
+.. _autouse: https://docs.pytest.org/en/7.1.x/how-to/fixtures.html#autouse-fixtures-fixtures-you-don-t-have-to-request
 
 .. _timeouts:
 
@@ -118,20 +125,26 @@ comm
     The MPI communicator available for the MPI-parallel test, i.e.
     :obj:`mpi4py.MPI.COMM_WORLD`.
 
-    See also :func:`pytest_isolate_mpi.fixtures.comm_fixture`.
+    See also :func:`~pytest_isolate_mpi.fixtures.comm_fixture`.
+
+
+mpi_ranks:
+    The number of MPI processes spawned for this test. Automatically used.
+
+    See also :func:`~pytest_isolate_mpi.fixtures.mpi_ranks_fixture`.
 
 
 mpi_tmpdir
     Wraps Pytest builtin ``tmpdir`` fixture such that it can be used under
     MPI from all MPI processes.
 
-    See also :func:`pytest_isolate_mpi.fixtures.mpi_tmpdir_fixture`.
+    See also :func:`~pytest_isolate_mpi.fixtures.mpi_tmpdir_fixture`.
 
 mpi_tmp_path
     Wraps Pytest builtin ``tmp_path`` fixture such that it can be used
     under MPI from all MPI processes.
 
-    See also :func:`pytest_isolate_mpi.fixtures.mpi_tmp_path_fixture`.
+    See also :func:`~pytest_isolate_mpi.fixtures.mpi_tmp_path_fixture`.
 
 
 Customization
@@ -175,7 +188,7 @@ following command line arguments to ``pytest``:
 --custom-ini-for-subsession
     Path to custom Pytest ini file to use for the subsession instead of
     the one used by the outer session. The ``--override-ini`` option is
-    still applied to both ini files. The option is inteded for use with 
+    still applied to both ini files. The option is inteded for use with
     containerization, where some options are only applicable to the
     main session outside the container or subsessions within it.
 
@@ -277,28 +290,4 @@ Percentage of Completed Tests During Pytest Run
 As ``pytest-isolate-mpi`` produces one test protocol per MPI-process
 while not increasing the test count, the reported percentages for test
 run completion are incorrect.
-
-
-Troubleshooting
----------------
-
-Test Collection Fails with ``function uses no argument 'mpi_ranks'``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-``pytest-isolate-mpi`` `parametrizes`_ all MPI tests with regards to the
-chosen number of MPI processes. As such, all test marked using the
-``pytest.mark.mpi()`` marker must accept the argument ``mpi_ranks``,
-even if the test makes no use of this information::
-
-
-    @pytest.mark.mpi(ranks=2)
-    def test_pass(mpi_ranks):  # Argument required
-        assert True
-
-
-
-If at least one MPI test misses this argument, the test collection fails.
-
-.. _parametrizes: https://docs.pytest.org/en/stable/how-to/parametrize.html#pytest-mark-parametrize-parametrizing-test-functions
-
 

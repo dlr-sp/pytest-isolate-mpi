@@ -7,12 +7,12 @@ import pytest
 
 
 @pytest.mark.mpi(ranks=2)
-def test_tmp_path_factory_is_cached(mpi_ranks, comm, tmp_path_factory):  # pylint: disable=unused-argument
+def test_tmp_path_factory_is_cached(comm, tmp_path_factory):
     marker = tmp_path_factory.getbasetemp() / f"marker-rank-{comm.rank}"
     marker.touch()
     assert marker.exists()
 
 
 @pytest.mark.mpi(ranks=2)
-def test_tmp_path_factory_is_shared(mpi_ranks, comm, tmp_path_factory):  # pylint: disable=unused-argument
+def test_tmp_path_factory_is_shared(comm, tmp_path_factory):
     assert (tmp_path_factory.getbasetemp() / f"marker-rank-{comm.rank}").exists()

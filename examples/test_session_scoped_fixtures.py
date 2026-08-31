@@ -29,7 +29,7 @@ def expensive_fixture(second, comm):
 
 
 @pytest.mark.mpi(ranks=[1, 2])
-def test_cache_first(mpi_ranks, comm, computation):  # pylint: disable=unused-argument
+def test_cache_first(comm, computation):
     # This test calls the expensive fixture first.
     assert computation.was_cached is False
     assert computation.computed_in_rank_of_size == (comm.rank, comm.size)
@@ -37,7 +37,7 @@ def test_cache_first(mpi_ranks, comm, computation):  # pylint: disable=unused-ar
 
 
 @pytest.mark.mpi(ranks=[1, 2])
-def test_cache_second(mpi_ranks, comm, computation, third):  # pylint: disable=unused-argument
+def test_cache_second(comm, computation, third):
     # This test uses the cache.
     assert computation.was_cached is True
     assert computation.computed_in_rank_of_size == (comm.rank, comm.size)

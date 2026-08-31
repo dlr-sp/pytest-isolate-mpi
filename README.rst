@@ -9,10 +9,10 @@ suite. Similarly, deadlocks can be treated with timeouts for tests to
 prevent a test suite from never being able to finish::
 
     import pytest
-    
-    
+
+
     @pytest.mark.mpi(ranks=2, timeout=10, unit="s")
-    def test_with_mpi(mpi_ranks):
+    def test_with_mpi():
         assert True  # replace with actual, MPI-parallel test code
 
 

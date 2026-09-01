@@ -119,7 +119,7 @@ class MPIPlugin:
             threads = mark.kwargs.get("threads")
 
             if threads is not None:
-                if isinstance(threads, int) or threads <= 0:
+                if not isinstance(threads, int) or isinstance(threads, bool) or threads <= 0:
                     pytest.exit(
                         "Number of OpenMP threads must be a positive integer",
                         pytest.ExitCode.USAGE_ERROR,

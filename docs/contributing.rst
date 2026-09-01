@@ -2,10 +2,10 @@ Contributing
 ============
 
 Thank you for partaking in the development and improvement of
-``pytest-mpi-isolate``. Nevertheless, there are some rules we would like
+``pytest-isolate-mpi``. Nevertheless, there are some rules we would like
 you to follow.  These rules shall keep the source code in a readable,
 understandable, well tested and documented and therefore maintainable
-state. 
+state.
 
 The rules are not defined to be broken or circumvented. That said, keep
 in mind the objective you try to accomplish. A breach of the rules might
@@ -25,8 +25,8 @@ Code Guidelines
 Programming Language
 ~~~~~~~~~~~~~~~~~~~~
 
-The programming language of the project is python. The oldest still
-supported version of python is defined in the file ``pyproject.toml``.
+The programming language of the project is Python. The oldest still
+supported version of Python is defined in the file ``pyproject.toml``.
 
 
 Programming Style
@@ -37,28 +37,28 @@ All source code shall be formatted according to the `PEP 8`_ rules.
 .. _PEP 8: https://python.org/dev/peps/pep-0008
 
 Additionally, the following rules or deviations from the PEP 8 style
-apply: 
+apply:
 
 
 Maximum line length
     In code files, limit the maximum line length to 120 characters,
-    except for comment lines which are limited at 72 characters. For
+    except for comment lines which are limited to 72 characters. For
     reStructuredText files the limit is 72 characters.
 
 Imports
-    Only one symbol shall be imported per line.  
+    Only one symbol shall be imported per line.
 
 Type hints
     New or updated APIs (functions, methods, attributes, etc.) shall be
-    annotated with type hints. 
+    annotated with type hints.
 
 
 Testing
 ~~~~~~~
 
-``pytest-isolate-mpi`` has extensive automated test suite for quality assurance. To
-facilitate easy, small and readable tests,  the
-`Pytest`_ framework. 
+``pytest-isolate-mpi`` has an extensive automated test suite for
+quality assurance. To facilitate easy, small and readable tests, the
+`Pytest`_ framework is used.
 
 .. _Pytest: https://docs.pytest.org
 
@@ -69,31 +69,33 @@ for potential exceptions and error conditions, e.g. IO errors or invalid
 input.
 
 .. _happy path: https://en.wikipedia.org/wiki/happy_path
- 
+
 
 Documentation
 ~~~~~~~~~~~~~
 
-From an user's perspective, ``pytest-isolate-mpi`` shall be fully documented. Any
-new feature or changed behavior must be reflected in the documentation.
+From a user's perspective, ``pytest-isolate-mpi`` shall be fully
+documented. Any new feature or changed behavior must be reflected in
+the documentation.
 
-``pytest-isolate-mpi`` uses sphinx to generate html pages from `reStructuredText`_
-files in ``docs`` directory and `Python docstrings`_.
+``pytest-isolate-mpi`` uses Sphinx to generate HTML pages from
+`reStructuredText`_ files in the ``docs`` directory and `Python
+docstrings`_.
 
 .. _reStructuredText: http://www.sphinx-doc.org/en/stable/rest.html
 .. _Python docstrings: https://www.python.org/dev/peps/pep-0257/
 
-Any user-relevant change is also to be recorded in changelog located in
-``CHANGES.rst``.
+Any user-relevant change is also to be recorded in the changelog
+located in ``CHANGES.rst``.
 
 The in-code documentation encompasses the bulk of the developer
-documentation. It should explain how a given module, class, methods, or
+documentation. It should explain how a given module, class, method, or
 function can be used. Therefore, document the API provided by a module/
 package and a *short* description of its functionality.
 
 The Python docstrings are formatted in the pleasantly compact `Google
 style`_. Types shall be documented with `Python type hints`_ and
-no longer in the docstrings.
+not in the docstrings.
 
 .. _Google style: https://sphinxcontrib-napoleon.readthedocs.io/en/
    latest/sphinxcontrib.napoleon.html
@@ -104,9 +106,9 @@ Changing Existing Code — Dealing With Legacy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The `boy scout rule`_ applies.  Whenever you change an existing piece of
-source code, please also pay attention, that all the rules described in
-this document are followed. If you find any deviation, it is now up to
-you to fix it. 
+source code, please also pay attention that all the rules described in
+this document are followed. If you find any deviation, it is up to
+you to fix it.
 
 .. _boy scout rule: https://clean-code-developer.com/grades/
     igrade-1-red/#boy_scout_rule
@@ -149,9 +151,9 @@ request as described below.
 Adding Features and Fixing Bugs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Always reference to an open an issue when opening a branch. This will
-help with the provenience of modifications and additions to the source
-code in the long run. If there is no issue yet, create one.  
+Always reference an open issue when opening a branch. This will
+help with the provenance of modifications and additions to the source
+code in the long run. If there is no issue yet, create one.
 
 Create a separate branch for every bug fix or feature you would like to
 implement. Please make sure to use the naming convention and a telling
@@ -163,17 +165,17 @@ out easily:
 * *for maintenance:* ``maintenance/descriptive_name``
 
 
-Commiting Changes
-~~~~~~~~~~~~~~~~~
+Committing Changes
+~~~~~~~~~~~~~~~~~~
 
 Please make small commits, as a general rule: one commit equals one
-change. Commit and push working code only. 
+change. Commit and push working code only.
 
 Commits shall have meaningful commit messages which should mainly explain
-the *reasoning* leading the change in the commit. Commit messages have
+the *reasoning* behind the change. Commit messages shall have
 at least a title line limited to 50 characters. It may be optionally
-followed by blank line and additional paragraphs of explanation or
-context. For these, a line limit length of 72 characters applies. Commit
+followed by a blank line and additional paragraphs of explanation or
+context. For these, a line length limit of 72 characters applies. Commit
 titles use `title case`_ in the AP style.
 
 .. _title case: https://titlecaseconverter.com/
@@ -183,15 +185,15 @@ Pull Request and Code Review
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Before a change to the code is accepted into the main branch, a review
-will take place. These reviews are supposed to be reviews by peer. 
+will take place. These reviews are supposed to be peer reviews.
 
 Once the work in topic branch is ready to be included in main, create
 a Pull Request on GitHub and assign another developer as Reviewer. The
 reviewer will evaluate the proposed changes to certain criteria:
 
 * The code shall run without errors and the tests shall pass.
-* The code shall be correct, it shall do, what it is supposed to.
-* There shall be a certain technical quality w.r.t. logic, naming 
+* The code shall be correct, it shall do what it is supposed to.
+* There shall be a certain technical quality w.r.t. logic, naming
   convention, ...
 * The code shall be reusable, there shall be no duplications.
 * The code shall handle exceptions and errors.
@@ -199,13 +201,13 @@ reviewer will evaluate the proposed changes to certain criteria:
 * The code shall contain all relevant tests.
 * The code shall follow the style guide.
 
-The developer of the branch is expected to update the merge request with
-new commits until the review criteria are met. 
+The developer of the branch is expected to update the pull request with
+new commits until the review criteria are met.
 
 The overall review goal is to ensure merges improve the overall quality
-of ``pytest-isolate-mpi``. Sometimes it is now possible to make changes
+of ``pytest-isolate-mpi``. Sometimes it is not possible to make changes
 which meet all review criteria fully without enlarging the scope of the
-change to the point of impracticability. In such cases, the Merge
+change to the point of impracticability. In such cases, the Pull
 Request should be accepted as soon as it improves ``pytest-isolate-mpi``
 in some traceable manner.
 
@@ -220,8 +222,7 @@ How to Prepare a New Development Environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In order to start developing on ``pytest-isolate-mpi``, one has to clone
-repository, setup ``pytest-isolate-mpi`` with its dependencies, and optionally
-install the Sertlib tools for the built-in examples:
+the repository and set up ``pytest-isolate-mpi`` with its dependencies:
 
 1.  Obtain the source code::
 
@@ -234,29 +235,26 @@ install the Sertlib tools for the built-in examples:
         source venv/bin/activate
         pip install -e ".[dev]"
 
-    
-    Using ``venv`` is not strictly necessary, but recommended to isolate
-    MDO Diver's dependencies from the ones of other projects. In the
-    ``pip`` step, the development dependencies to run the tests and
-    generate the HTML documentation are installed as well. The
-    constraints file tells ``pip`` where to find the ``slb`` requirement
-    of ``pytest-isolate-mpi``.  By passing the flag ``-e`` the package
-    is installed in editable mode. Changes to the source code don't have
-    to be installed to become effective when running
-    ``venv/bin/mdo-driver``.
+
+    Using ``venv`` is not strictly necessary, but recommended to
+    isolate the dependencies of ``pytest-isolate-mpi`` from those of
+    other projects. In the ``pip`` step, the development dependencies
+    to run the tests and generate the HTML documentation are installed
+    as well. By passing the flag ``-e`` the package is installed in
+    editable mode, so changes to the source code take effect without
+    reinstallation.
 
 .. |venv| replace:: ``venv``
 .. _venv: https://docs.python.org/3/library/venv.html
 
-The other how-tos in this section assume you have completed the full MDO
-Diver installation and you using a shell with the MDO Diver ``venv``
-activated.
+The other how-tos in this section assume you have completed the
+installation and are using a shell with the ``venv`` activated.
 
 
 How to Run Pre-Commit Checks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-While all tests are executed in via CI pipeline, it is advisable to run
+While all tests are executed via the CI pipeline, it is advisable to run
 these checks before committing changes to avoid unnecessary follow-up
 commits polluting the commit history with noise.
 

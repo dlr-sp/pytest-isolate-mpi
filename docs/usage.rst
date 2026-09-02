@@ -5,8 +5,8 @@ Usage
 Writing MPI-Parallel Tests
 --------------------------
 
-To create a MPI-parallel test, its test function must be marked with the
-``mpi`` mark:
+To create an MPI-parallel test, its test function must be marked with
+the ``mpi`` mark:
 
 .. literalinclude:: ../examples/test_basic.py
     :linenos:
@@ -16,11 +16,11 @@ required ``ranks`` argument.
 
 For any test carrying the ``mpi`` mark, ``pytest-isolate-mpi`` will
 launch an MPI job with the requested amount of processes. In this MPI
-job, a ``pytest`` session runs this particular tests. Each MPI process
+job, a ``pytest`` session runs this particular test. Each MPI process
 produces its own test report which is collected in the main process. To
-distinguish the reports form each MPI process, ``pytest-isolate-mpi``
+distinguish the reports from each MPI process, ``pytest-isolate-mpi``
 extends the node IDs of the test reports to contain the source rank
-where the report is originating from. For instance the test above would
+from which the report originates. For instance, the test above would
 result in (with ``--verbose`` passed to ``pytest``):
 
 .. literalinclude:: ../examples/test_basic.py.out
@@ -33,7 +33,7 @@ easily identified:
 .. literalinclude:: ../examples/test_one_failing_rank.py
     :linenos:
 
-This test will always fail an MPI process 0:
+This test will always fail on MPI process 0:
 
 .. literalinclude:: ../examples/test_one_failing_rank.py.out
     :linenos:
@@ -56,7 +56,7 @@ optional ``threads`` argument of the ``mpi`` mark:
 
     @pytest.mark.mpi(ranks=2, threads=4)
     def test_hybrid_parallel_code(mpi_ranks):
-        assert os.environ["OMP_NUM_THREADS"] =="4"
+        assert os.environ["OMP_NUM_THREADS"] == "4"
 
 For this example, ``pytest-isolate-mpi`` launches two MPI processes and sets
 ``OMP_NUM_THREADS=4`` in each process.
@@ -72,8 +72,9 @@ the environment of the main Pytest process when MPI isolation is disabled.
 Parametrizing the Number of MPI Processes
 -----------------------------------------
 
-By passing a list to ``ranks`` argument to the ``mpi`` mark, a test is
-run multiple times with each requested number of MPI processes in turn
+By passing a list to the ``ranks`` argument of the ``mpi`` mark, a
+test is run multiple times with each requested number of MPI processes
+in turn.
 
 .. literalinclude:: ../examples/test_number_of_processes_matches_ranks.py
     :linenos:
@@ -97,16 +98,16 @@ produced:
 Enforcing a Maximum Runtime for MPI Tests
 -----------------------------------------
 
-``pytest-isolate-mpi`` allows to set a maximum runtime for MPI-parallel
+``pytest-isolate-mpi`` allows setting a maximum runtime for MPI-parallel
 tests with the ``timeout`` argument of the ``mpi`` mark:
 
 .. literalinclude:: ../examples/test_mpi_deadlock.py
     :linenos:
 
-``timeout`` sets maximum allowed runtime before the test is
+``timeout`` sets the maximum allowed runtime before the test is
 forcefully terminated. With the optional ``unit`` argument, one can set
 the time unit for the duration. Supported are ``"s"`` for seconds,
-``"m"`` for minutes and ``h`` for hours. If not specified explicitly,
+``"m"`` for minutes and ``"h"`` for hours. If not specified explicitly,
 the default unit is seconds.
 
 By setting a timeout for an MPI-parallel test, deadlocks in this test
@@ -127,22 +128,21 @@ comm
 
     See also :func:`~pytest_isolate_mpi.fixtures.comm_fixture`.
 
-
-mpi_ranks:
-    The number of MPI processes spawned for this test. Automatically used.
+mpi_ranks
+    The number of MPI processes spawned for this test. Automatically
+    used.
 
     See also :func:`~pytest_isolate_mpi.fixtures.mpi_ranks_fixture`.
 
-
 mpi_tmpdir
-    Wraps Pytest builtin ``tmpdir`` fixture such that it can be used under
-    MPI from all MPI processes.
+    Wraps Pytest's built-in ``tmpdir`` fixture such that it can be used
+    under MPI from all MPI processes.
 
     See also :func:`~pytest_isolate_mpi.fixtures.mpi_tmpdir_fixture`.
 
 mpi_tmp_path
-    Wraps Pytest builtin ``tmp_path`` fixture such that it can be used
-    under MPI from all MPI processes.
+    Wraps Pytest's built-in ``tmp_path`` fixture such that it can be
+    used under MPI from all MPI processes.
 
     See also :func:`~pytest_isolate_mpi.fixtures.mpi_tmp_path_fixture`.
 
@@ -157,10 +157,10 @@ The behavior of ``pytest-isolate-mpi`` can be customized via the
 following command line arguments to ``pytest``:
 
 --no-mpi-isolation
-    Run tests without MPI and/or process isolation. This is particular
-    useful for debugging parallel test cases. Normally, when ``pytest``
-    is run in a debugger, breakpoints in parallel tests would not trigger
-    because of the process isolation.
+    Run tests without MPI and/or process isolation. This is
+    particularly useful for debugging parallel test cases. Normally,
+    when ``pytest`` is run in a debugger, breakpoints in parallel
+    tests would not trigger because of the process isolation.
 
 --verbose-mpi
     Include detailed MPI information in output.
@@ -168,13 +168,13 @@ following command line arguments to ``pytest``:
 
 --mpi-default-test-timeout
     Sets a default test timeout for all MPI-isolated tests. This timeout
-    can be overriden per test via the the ``timeout`` argument of the
+    can be overridden per test via the ``timeout`` argument of the
     ``mpi`` marker, see :ref:`timeouts`. Defaults to no timeout if not
     specified.
 
 --mpi-default-test-timeout-unit
     Sets a default test timeout unit for all MPI-isolated tests. This
-    timeout can be overriden per test via the the ``unit`` argument of
+    unit can be overridden per test via the ``unit`` argument of
     the ``mpi`` marker, see :ref:`timeouts`. Defaults to ``s`` for
     seconds if not specified. The other valid choices are ``m`` for
     minutes and ``h`` for hours.
@@ -186,9 +186,10 @@ following command line arguments to ``pytest``:
     allowing the use of Python within the container.
 
 --custom-ini-for-subsession
-    Path to custom Pytest ini file to use for the subsession instead of
-    the one used by the outer session. The ``--override-ini`` option is
-    still applied to both ini files. The option is inteded for use with
+    Path to a custom Pytest ini file to use for the subsession instead
+    of the one used by the outer session. The ``--override-ini`` option
+    is still applied to both ini files. The option is intended for use
+    with
     containerization, where some options are only applicable to the
     main session outside the container or subsessions within it.
 
@@ -200,7 +201,7 @@ Configuration
 `configuration file`_:
 
 mpi_executable
-    The mpi executable to launch the forked MPI environment with. If
+    The MPI executable to launch the forked MPI environment with. If
     none is given, ``pytest-isolate-mpi`` tries ``mpirun`` and
     ``mpiexec``.
 
@@ -221,11 +222,11 @@ two compute nodes with 128 processes each::
     # pytest.ini
     mpi_executable = srun
     mpi_option_for_processes = -N
-    mpi_command_line_args = --ntasks-per-node 128 --account <MySlrumAccount>
+    mpi_command_line_args = --ntasks-per-node 128 --account <MySlurmAccount>
 
 
 When running Slurm with multiple compute nodes, make sure that ``$TMPDIR``
-is set to a single directory outside the compute nodes, e.g a directory on
+is set to a single directory outside the compute nodes, e.g. a directory
 on ``/scratch`` or ``/lustre``.
 
 .. _configuration file: https://docs.pytest.org/en/stable/reference/customize.html
@@ -251,9 +252,9 @@ and ``mpirun`` itself:
 Fixture Scopes
 ~~~~~~~~~~~~~~
 
-Pytest allows to reuse fixtures between tests with the help of `fixture
+Pytest allows reusing fixtures between tests with the help of `fixture
 scopes`_. Since ``pytest-isolate-mpi`` executes each MPI-parallel test
-in a Pytest sub session, support for session scopes other than the
+in a Pytest subsession, support for session scopes other than the
 default ``function`` scope is limited for MPI-parallel tests:
 
 .. _fixture scopes: https://docs.pytest.org/en/stable/how-to/fixtures.html#fixture-scopes
@@ -266,18 +267,18 @@ default ``function`` scope is limited for MPI-parallel tests:
   differently sized communicators and non-MPI/MPI tests is not possible.
   Fixtures are serialized with the :mod:`pickle` module. Please note that
   not all Python objects support pickling. Pytest's own ``tmp_path_factory``
-  holds unpicklable cleanup machinery since Pytest 9.1; the cache serializes
-  it with a dedicated recipe so all sub sessions keep sharing one base
-  temporary directory.
+  holds unpicklable cleanup machinery since Pytest 9.1; the cache
+  serializes it with a dedicated recipe so all subsessions keep sharing
+  one base temporary directory.
 
   Any other session-scoped fixture whose result cannot be pickled is
-  skipped by the cache rather than failing the test run. Such a fixture is
-  re-evaluated in every sub session, as the ``comm`` fixture is, and
+  skipped by the cache rather than failing the test run. Such a fixture
+  is re-evaluated in every subsession, as the ``comm`` fixture is, and
   thus effectively behaves as if it were function-scoped: any state
   it holds is not shared between MPI-parallel tests.
 
 * ``class``, ``module``, and ``package``: Fixtures for these scopes are
-  re-created for each MPI-parallel tests. Such fixtures effectively
+  re-created for each MPI-parallel test. Such fixtures effectively
   behave as if they were function-scoped.
 
 For non-MPI tests, fixture scopes behave as usual even if
@@ -287,7 +288,7 @@ For non-MPI tests, fixture scopes behave as usual even if
 Percentage of Completed Tests During Pytest Run
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-As ``pytest-isolate-mpi`` produces one test protocol per MPI-process
+As ``pytest-isolate-mpi`` produces one test report per MPI process
 while not increasing the test count, the reported percentages for test
 run completion are incorrect.
 

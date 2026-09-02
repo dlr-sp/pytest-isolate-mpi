@@ -15,10 +15,6 @@ not a reason to deviate.
 
 The rules will be detailed below.
 
-.. contents:: table of contents
-   :local:
-
-
 Code Guidelines
 ---------------
 

@@ -30,9 +30,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "check-manifest",
-    "Sphinx<7",
-    "sphinx-rtd-theme<2",
-    "docutils<0.19",
+    "Sphinx>=7,<10",
+    "furo",
     "pylint",
     "pytest-cov",
     "wheel",

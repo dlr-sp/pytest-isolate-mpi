@@ -22,9 +22,3 @@ prevent a test suite from never being able to finish.
    changes
    contributing
    related_work
-
-Indices and tables
-==================
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

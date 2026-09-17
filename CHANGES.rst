@@ -13,6 +13,10 @@ Version 0.4
   ``pytest-isolate-mpi`` is loaded. The nested MPI environment check is
   now only performed when MPI isolation is actually used. (`#42`_)
   
+- Fixed VS Code test execution for MPI tests by preventing
+  ``vscode_pytest`` from being forwarded to MPI subprocesses and by
+  keeping report node IDs stable across MPI ranks. (`#39`_)
+
 - Fixed compatibility with ``pytest-forked`` so that non-MPI tests can
   still be executed with ``--forked`` when ``pytest-isolate-mpi`` is
   installed. (`#38`_)
@@ -45,6 +49,7 @@ Version 0.4
 .. _#36:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/36
 .. _#37:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/37
 .. _#38:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/38
+.. _#39:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/39
 .. _#42:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/42
 .. _#43:  https://github.com/dlr-sp/pytest-isolate-mpi/pull/43
 

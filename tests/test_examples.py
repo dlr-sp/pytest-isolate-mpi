@@ -1,20 +1,20 @@
 import os
 
 import pytest
+from types import SimpleNamespace
+from pytest_isolate_mpi import _plugin
 
 
 @pytest.mark.parametrize(
     ["test", "outcomes", "lines"],
     [
         pytest.param("test_basic", {"passed": 2}, [], id="test_basic"),
-        pytest.param(
-            "test_fail", {"failed": 2}, [rf"FAILED .*test_fail\[2\]\[rank={i}\].*" for i in range(2)], id="test_fail"
-        ),
+        pytest.param("test_fail", {"failed": 2}, [r"FAILED .*test_fail\[2\].*"] * 2, id="test_fail"),
         pytest.param("test_xfail", {"xfailed": 2}, [], id="test_xfail"),
         pytest.param(
             "test_one_failing_rank",
             {"passed": 1, "failed": 1},
-            [r"FAILED .*test_one_failing_rank\[2\]\[rank=0\].*"],
+            [r"FAILED .*test_one_failing_rank\[2\].*"],
             id="test_one_failing_rank",
         ),
         pytest.param("test_one_aborting_rank", {"passed": 1, "failed": 1}, [], id="test_one_aborting_rank"),
@@ -51,6 +51,28 @@ def test_outcomes(pytester, test, outcomes, lines):
     result.assert_outcomes(**outcomes)
     if lines:
         result.stdout.re_match_lines(lines, consecutive=True)
+
+
+def test_vscode_nodeid_remains_unchanged(monkeypatch, tmp_path):
+    nodeid = "test_example.py::test_mpi[2]"
+    report = SimpleNamespace(
+        nodeid=nodeid,
+        location=("test_example.py", 0, "test_mpi[2]"),
+    )
+    item = SimpleNamespace(
+        config=SimpleNamespace(option=SimpleNamespace(plugins=["vscode_pytest"])),
+    )
+
+    monkeypatch.setattr(
+        _plugin.runner,
+        "runtestprotocol",
+        lambda *_args, **_kwargs: [report],
+    )
+    monkeypatch.setenv("PYTEST_MPI_REPORTS_PATH", str(tmp_path))
+
+    _plugin.MPIPlugin()._mpi_runtestprococol_inner(item)
+
+    assert report.nodeid == nodeid
 
 
 @pytest.mark.parametrize(

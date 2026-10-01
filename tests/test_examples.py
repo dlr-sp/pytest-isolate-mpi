@@ -170,3 +170,25 @@ def test_non_mpi_test_respects_forked(pytester):
 
     result = pytester.runpytest("--forked", "-v")
     result.assert_outcomes(passed=1)
+
+
+@pytest.mark.parametrize(
+    ["mixed", "outcomes"],
+    [
+        pytest.param(["plain", "mpi"], {"passed": 5}, id="plain_then_mpi"),
+        pytest.param(["mpi", "plain", "mpi"], {"passed": 7}, id="mpi_plain_mpi"),
+        pytest.param(["mpi", "plain"], {"passed": 5}, id="mpi_then_plain"),
+    ],
+)
+def test_module_torn_down_after_trailing_mpi_test(pytester, mixed, outcomes):
+    """A module ending with an MPI test must not leak its setup into the next module (#48)."""
+    tests = []
+    for index, kind in enumerate(mixed):
+        marker = "@pytest.mark.mpi(ranks=2)\n" if kind == "mpi" else ""
+        tests.append(f"{marker}def test_{kind}_{index}():\n    pass\n")
+    pytester.makepyfile(
+        test_a_mixed="import pytest\n\n\n" + "\n\n".join(tests),
+        test_b_plain_only="def test_first():\n    pass\n\n\ndef test_second():\n    pass\n",
+    )
+    result = pytester.runpytest("-v", "-rA")
+    result.assert_outcomes(**outcomes)

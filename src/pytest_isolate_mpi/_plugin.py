@@ -165,11 +165,15 @@ class MPIPlugin:
         self._session = None
 
     @pytest.hookimpl(tryfirst=True)
-    def pytest_runtest_protocol(self, item):
+    def pytest_runtest_protocol(self, item: pytest.Item, nextitem: pytest.Item | None):
         if self._is_forked_mpi_environment:
             reports = self._mpi_runtestprococol_inner(item)
         elif not self._no_mpi_isolation and item.get_closest_marker("mpi"):
             reports = self._mpi_runtestprotocol(item)
+            # The item ran in subprocesses, so its teardown never runs
+            # here. Tear down what the next item does not share, as
+            # pytest's default protocol would (#48).
+            item.session._setupstate.teardown_exact(nextitem)  # pylint: disable=protected-access
         else:
             return None
 

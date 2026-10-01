@@ -166,14 +166,12 @@ class MPIPlugin:
 
     @pytest.hookimpl(tryfirst=True)
     def pytest_runtest_protocol(self, item: pytest.Item, nextitem: pytest.Item | None):
+        isolated = False
         if self._is_forked_mpi_environment:
             reports = self._mpi_runtestprococol_inner(item)
         elif not self._no_mpi_isolation and item.get_closest_marker("mpi"):
             reports = self._mpi_runtestprotocol(item)
-            # The item ran in subprocesses, so its teardown never runs
-            # here. Tear down what the next item does not share, as
-            # pytest's default protocol would (#48).
-            item.session._setupstate.teardown_exact(nextitem)  # pylint: disable=protected-access
+            isolated = True
         else:
             return None
 
@@ -182,6 +180,13 @@ class MPIPlugin:
 
         for rep in reports:
             ihook.pytest_runtest_logreport(report=rep)
+
+        if isolated:
+            # The test ran in subprocesses; tear down here what the
+            # next item does not share.
+            setupstate = item.session._setupstate  # pylint: disable=protected-access
+            call = pytest.CallInfo.from_call(lambda: setupstate.teardown_exact(nextitem), when="teardown")
+            ihook.pytest_runtest_logreport(report=TestReport.from_item_and_call(item, call))
 
         ihook.pytest_runtest_logfinish(nodeid=item.nodeid, location=item.location)
 

@@ -181,7 +181,6 @@ def test_non_mpi_test_respects_forked(pytester):
     ],
 )
 def test_module_torn_down_after_trailing_mpi_test(pytester, mixed, outcomes):
-    """A module ending with an MPI test must not leak its setup into the next module (#48)."""
     tests = []
     for index, kind in enumerate(mixed):
         marker = "@pytest.mark.mpi(ranks=2)\n" if kind == "mpi" else ""
@@ -192,3 +191,26 @@ def test_module_torn_down_after_trailing_mpi_test(pytester, mixed, outcomes):
     )
     result = pytester.runpytest("-v", "-rA")
     result.assert_outcomes(**outcomes)
+
+
+def test_teardown_error_after_trailing_mpi_test(pytester):
+    pytester.makepyfile("""
+        import pytest
+
+        @pytest.fixture(scope="module")
+        def failing_teardown():
+            yield
+            raise RuntimeError("teardown failed")
+
+        def test_plain(failing_teardown):
+            pass
+
+        @pytest.mark.mpi(ranks=2)
+        def test_mpi():
+            pass
+        """)
+
+    result = pytester.runpytest("-v")
+
+    result.assert_outcomes(passed=3, errors=1)
+    result.stdout.no_fnmatch_line("*INTERNALERROR*")

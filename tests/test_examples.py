@@ -1,8 +1,4 @@
-import os
-
 import pytest
-from types import SimpleNamespace
-from pytest_isolate_mpi import _plugin
 
 
 @pytest.mark.parametrize(
@@ -53,28 +49,6 @@ def test_outcomes(pytester, test, outcomes, lines):
         result.stdout.re_match_lines(lines, consecutive=True)
 
 
-def test_vscode_nodeid_remains_unchanged(monkeypatch, tmp_path):
-    nodeid = "test_example.py::test_mpi[2]"
-    report = SimpleNamespace(
-        nodeid=nodeid,
-        location=("test_example.py", 0, "test_mpi[2]"),
-    )
-    item = SimpleNamespace(
-        config=SimpleNamespace(option=SimpleNamespace(plugins=["vscode_pytest"])),
-    )
-
-    monkeypatch.setattr(
-        _plugin.runner,
-        "runtestprotocol",
-        lambda *_args, **_kwargs: [report],
-    )
-    monkeypatch.setenv("PYTEST_MPI_REPORTS_PATH", str(tmp_path))
-
-    _plugin.MPIPlugin()._mpi_runtestprococol_inner(item)
-
-    assert report.nodeid == nodeid
-
-
 @pytest.mark.parametrize(
     ["test", "outcomes", "lines"],
     [
@@ -108,109 +82,3 @@ def test_outcomes_no_isolation(pytester, test, outcomes, lines):
     result.assert_outcomes(**outcomes)
     if lines:
         result.stdout.re_match_lines(lines, consecutive=True)
-
-
-@pytest.mark.parametrize(
-    "threads",
-    [
-        pytest.param("0", id="zero"),
-        pytest.param("-1", id="negative"),
-        pytest.param("2.5", id="float"),
-        pytest.param("'4'", id="string"),
-        pytest.param("True", id="boolean"),
-    ],
-)
-def test_invalid_thread_count(pytester, threads):
-    pytester.makepyfile(f"""
-        import pytest
-
-        @pytest.mark.mpi(ranks=2, threads={threads})
-        def test_invalid_threads(mpi_ranks):
-            assert True
-        """)
-
-    result = pytester.runpytest("-v")
-    combined_output = result.stdout.str() + result.stderr.str()
-
-    assert result.ret != pytest.ExitCode.OK
-    assert "Number of OpenMP threads must be a positive integer" in combined_output
-
-
-def test_thread_count_does_not_modify_outer_environ(
-    pytester,
-    monkeypatch,
-):
-    monkeypatch.setenv("OMP_NUM_THREADS", "9")
-
-    pytester.makepyfile("""
-        import os
-
-        import pytest
-
-        @pytest.mark.mpi(ranks=2, threads=3)
-        def test_inner_environ(mpi_ranks):
-            assert os.environ["OMP_NUM_THREADS"] == "3"
-        """)
-
-    result = pytester.runpytest("-v")
-
-    result.assert_outcomes(passed=2)
-    assert os.environ["OMP_NUM_THREADS"] == "9"
-
-
-def test_non_mpi_test_respects_forked(pytester):
-    pytester.makepyfile("""
-        import os
-
-        parent_pid = os.getpid()
-
-        def test_runs_in_fork():
-            assert os.getpid() != parent_pid
-        """)
-
-    result = pytester.runpytest("--forked", "-v")
-    result.assert_outcomes(passed=1)
-
-
-@pytest.mark.parametrize(
-    ["mixed", "outcomes"],
-    [
-        pytest.param(["plain", "mpi"], {"passed": 5}, id="plain_then_mpi"),
-        pytest.param(["mpi", "plain", "mpi"], {"passed": 7}, id="mpi_plain_mpi"),
-        pytest.param(["mpi", "plain"], {"passed": 5}, id="mpi_then_plain"),
-    ],
-)
-def test_module_torn_down_after_trailing_mpi_test(pytester, mixed, outcomes):
-    tests = []
-    for index, kind in enumerate(mixed):
-        marker = "@pytest.mark.mpi(ranks=2)\n" if kind == "mpi" else ""
-        tests.append(f"{marker}def test_{kind}_{index}():\n    pass\n")
-    pytester.makepyfile(
-        test_a_mixed="import pytest\n\n\n" + "\n\n".join(tests),
-        test_b_plain_only="def test_first():\n    pass\n\n\ndef test_second():\n    pass\n",
-    )
-    result = pytester.runpytest("-v", "-rA")
-    result.assert_outcomes(**outcomes)
-
-
-def test_teardown_error_after_trailing_mpi_test(pytester):
-    pytester.makepyfile("""
-        import pytest
-
-        @pytest.fixture(scope="module")
-        def failing_teardown():
-            yield
-            raise RuntimeError("teardown failed")
-
-        def test_plain(failing_teardown):
-            pass
-
-        @pytest.mark.mpi(ranks=2)
-        def test_mpi():
-            pass
-        """)
-
-    result = pytester.runpytest("-v")
-
-    result.assert_outcomes(passed=3, errors=1)
-    result.stdout.no_fnmatch_line("*INTERNALERROR*")

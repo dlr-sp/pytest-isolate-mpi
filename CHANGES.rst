@@ -1,6 +1,16 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+- Fixed ``previous item was not torn down properly`` errors after a
+  module that contains a non-MPI test and ends with an MPI test. The
+  module is now torn down after its last MPI test, as it is after a
+  non-MPI test. (`#48`_)
+
+.. _#48: https://github.com/dlr-sp/pytest-isolate-mpi/issues/48
+
 Version 0.4
 -----------
 

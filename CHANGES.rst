@@ -1,6 +1,25 @@
 Changelog
 =========
 
+Version 0.5
+-------------
+
+- Fixed the percentage and test count tracking of ``pytest`` for MPI
+  tests. Previously, an MPI test was collected as a single test, while
+  one test report per MPI process was produced, which made ``pytest``
+  report completion percentages beyond 100% and more results than
+  collected tests. Now, MPI tests are parametrized over the new autouse
+  fixture ``mpi_rank``, so each MPI process of a test run gets its own
+  collected test and report. The reports of all rank tests of one test
+  run are gathered from a single MPI job. Note that this changes the
+  node IDs of MPI test reports, e.g., from ``test_mpi[2][rank=0]`` to
+  ``test_mpi[2-rank0]``. (`#25`_)
+
+- Fixed dispatching of MPI test subsessions when ``pytest`` is run with
+  ``-q``.
+
+.. _#25: https://github.com/dlr-sp/pytest-isolate-mpi/issues/25
+
 Version 0.4.1
 -------------
 

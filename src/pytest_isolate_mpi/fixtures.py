@@ -1,9 +1,12 @@
 """MPI-specific fixtures."""
 
+import os
 from pathlib import Path
 
 import py
 import pytest
+
+from ._constants import ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN
 
 
 @pytest.fixture(scope="session", name="comm")
@@ -60,3 +63,23 @@ def mpi_ranks_fixture(request) -> int:
     if hasattr(request, "param"):
         return request.param
     return 1
+
+
+@pytest.fixture(name="mpi_rank", autouse=True)
+def mpi_rank_fixture(request, mpi_ranks: int) -> int:  # pylint: disable=unused-argument
+    """Provides the MPI rank of the process executing the current test.
+
+    MPI tests are parametrized over ``mpi_rank`` by ``pytest-isolate-mpi``,
+    so that a separate test is reported for each MPI process of a test run.
+    In the forked MPI subsessions the actual rank of the executing process
+    is returned, since all MPI processes jointly execute one test. For tests
+    that are not parametrized with it (e.g. non-MPI tests) a default value
+    of ``0`` is returned.
+    """
+    if os.environ.get(ENVIRONMENT_VARIABLE_TO_HIDE_INNARDS_OF_PLUGIN, ""):
+        try:
+            from mpi4py import MPI  # pylint: disable=import-outside-toplevel
+        except ImportError:
+            pytest.fail("mpi4py needs to be installed to run this test")
+        return MPI.COMM_WORLD.rank
+    return getattr(request, "param", 0)

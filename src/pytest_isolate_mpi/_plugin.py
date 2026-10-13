@@ -31,6 +31,7 @@ from ._constants import OMP_NUM_THREADS_ENV
 from ._fixturecache import _load_fixture_result
 from ._fixturecache import _cache_fixture_result
 from .fixtures import comm_fixture  # pylint: disable=unused-import
+from .fixtures import mpi_rank_fixture  # pylint: disable=unused-import
 from .fixtures import mpi_ranks_fixture  # pylint: disable=unused-import
 from .fixtures import mpi_tmpdir_fixture  # pylint: disable=unused-import
 from .fixtures import mpi_tmp_path_fixture  # pylint: disable=unused-import
@@ -83,6 +84,22 @@ class MPIConfiguration:
         pytest.exit("failed to find mpirun/mpiexec required for starting MPI tests", pytest.ExitCode.USAGE_ERROR)
 
 
+@dataclasses.dataclass
+class _SubsessionReports:
+    """Reports of a dispatched MPI subsession, sorted by the rank of the reporting process.
+
+    The reports of the rank tests of a group are collected here as soon as one
+    of the rank tests dispatches the MPI test run; the remaining rank tests
+    consume their reports from here when pytest executes them.
+    """
+
+    reports_by_rank: dict[int, list]
+    failure_reason: str | None = None
+    timeout_in: tuple = ("NaN", "N/A")
+    sections: list = dataclasses.field(default_factory=list)
+    sections_consumed: bool = False
+
+
 class MPIPlugin:
     """
     pytest plugin to assist with testing MPI-using code
@@ -96,6 +113,7 @@ class MPIPlugin:
     _mpi_configuration: MPIConfiguration
     _session: Session | None = None
     _cache_tempdir: TemporaryDirectory | None = None
+    _subsession_reports: dict = {}
 
     def pytest_configure(self, config):
         """
@@ -113,8 +131,19 @@ class MPIPlugin:
             mpi_command_line_args=config.getini("mpi_command_line_args"),
         )
 
+    @pytest.hookimpl(hookwrapper=True)
     def pytest_generate_tests(self, metafunc):
-        """Extend the marker @pytest.mark.mpi such that we have parametrization of the tests w.r.t. # ranks."""
+        """Extend the marker @pytest.mark.mpi such that we have parametrization of the tests w.r.t. # ranks.
+
+        The parametrization is added after all other ``pytest_generate_tests``
+        implementations have contributed their parameters, so that the MPI rank
+        parametrization varies fastest. Thus, all rank tests belonging to one
+        MPI test run are executed directly one after the other.
+        """
+        yield
+        self._parametrize_mpi_ranks(metafunc)
+
+    def _parametrize_mpi_ranks(self, metafunc):
         for mark in metafunc.definition.iter_markers(name="mpi"):
             threads = mark.kwargs.get("threads")
 
@@ -140,8 +169,24 @@ class MPIPlugin:
                     if not isinstance(rank, int) or rank <= 0:
                         pytest.exit("Number of MPI ranks must be a positive integer", pytest.ExitCode.USAGE_ERROR)
 
-                if "mpi_ranks" in metafunc.fixturenames:
-                    metafunc.parametrize("mpi_ranks", list_of_ranks)
+                if self._no_mpi_isolation:
+                    if "mpi_ranks" in metafunc.fixturenames:
+                        metafunc.parametrize("mpi_ranks", list_of_ranks)
+                elif "mpi_ranks" in metafunc.fixturenames and "mpi_rank" in metafunc.fixturenames:
+                    # The rank parametrization depends on the number of ranks, so both
+                    # parameters are parametrized jointly. This way each MPI process of
+                    # a test run gets its own collected test, which keeps the number of
+                    # reports consistent with the number of collected tests.
+                    # ``mpi_rank`` is parametrized indirectly so that the fixture
+                    # function runs and can resolve the actual rank in forked MPI
+                    # subsessions.
+                    rank_combinations = [(ranks, rank) for ranks in list_of_ranks for rank in range(ranks)]
+                    metafunc.parametrize(
+                        "mpi_ranks,mpi_rank",
+                        rank_combinations,
+                        ids=[f"{ranks}-rank{rank}" for ranks, rank in rank_combinations],
+                        indirect=["mpi_rank"],
+                    )
 
     def pytest_runtest_setup(self, item):
         """
@@ -154,6 +199,7 @@ class MPIPlugin:
     @pytest.hookimpl(trylast=True)
     def pytest_sessionstart(self, session):
         self._session = session
+        self._subsession_reports = {}
         if "PYTEST_MPI_CACHE_PATH" not in os.environ:
             self._cache_tempdir = TemporaryDirectory()  # pylint: disable=consider-using-with
             os.environ["PYTEST_MPI_CACHE_PATH"] = self._cache_tempdir.name
@@ -163,6 +209,7 @@ class MPIPlugin:
         if self._cache_tempdir is not None:
             self._cache_tempdir.cleanup()
         self._session = None
+        self._subsession_reports = {}
 
     @pytest.hookimpl(tryfirst=True)
     def pytest_runtest_protocol(self, item: pytest.Item, nextitem: pytest.Item | None):
@@ -181,7 +228,7 @@ class MPIPlugin:
         for rep in reports:
             ihook.pytest_runtest_logreport(report=rep)
 
-        if isolated:
+        if isolated and not self._mpi_sibling_follows(item, nextitem):
             # The test ran in subprocesses; tear down here what the
             # next item does not share.
             setupstate = item.session._setupstate  # pylint: disable=protected-access
@@ -201,11 +248,6 @@ class MPIPlugin:
         comm = MPI.COMM_WORLD
         reports = runner.runtestprotocol(item, log=False)
         for report in reports:
-            if report.location is not None:
-                fspath, lineno, domain = report.location
-                report.location = fspath, lineno, f"{domain}[rank={comm.rank}]"
-                if "vscode_pytest" not in item.config.option.plugins:
-                    report.nodeid = f"{report.nodeid}[rank={comm.rank}]"
             setattr(report, "rank", comm.rank)
         if not os.path.isdir(os.environ["PYTEST_MPI_REPORTS_PATH"]):
             raise RuntimeError(
@@ -217,19 +259,18 @@ class MPIPlugin:
             pickle.dump(reports, f)
         return reports
 
-    def _mpi_runtestprotocol(self, item):  # pylint: disable=too-many-locals,too-many-branches
+    def _mpi_runtestprotocol(self, item):
         # double check whether MPI environment variables are residing in the forked env
         if not self._is_forked_mpi_environment:
             for env in MPI_ENV_HINTS:
                 if os.getenv(env):
                     pytest.exit("forked MPI tests cannot be run in an MPI environment", pytest.ExitCode.USAGE_ERROR)
-        mpi_ranks = 1
+
+        callspec_params = item.callspec.params if hasattr(item, "callspec") else {}
+        mpi_ranks = callspec_params.get("mpi_ranks", 1)
+        mpi_rank = callspec_params.get("mpi_rank", 0)
+
         threads = None
-
-        for fixture in item.fixturenames:
-            if fixture == "mpi_ranks" and "mpi_ranks" in item.callspec.params:
-                mpi_ranks = item.callspec.params["mpi_ranks"]
-
         timeout = None
         timeout_in = ("NaN", "N/A")
         for mark in item.iter_markers(name="mpi"):
@@ -241,6 +282,26 @@ class MPIPlugin:
                 timeout_in = (unit, timeout)
                 timeout = TIME_UNIT_CONVERSION[unit](timeout)
 
+        group_key = self._mpi_group_key(item)
+        subsession_reports = self._subsession_reports.get(group_key)
+        if subsession_reports is None:
+            # The MPI job for this group of rank tests has not been dispatched yet.
+            subsession_reports = self._dispatch_mpi_subsession(item, mpi_ranks, threads, timeout, timeout_in)
+            self._subsession_reports[group_key] = subsession_reports
+        reports = subsession_reports.reports_by_rank.pop(mpi_rank, None)
+
+        if reports is None:
+            # This rank did not write a report, e.g., because the MPI job was
+            # terminated upon a timeout or the rank exited prematurely.
+            reports = [self._synthesized_mpi_failure(item, subsession_reports)]
+        else:
+            for rep in reports:
+                rep.nodeid = item.nodeid
+                rep.location = item.location
+        return reports
+
+    def _dispatch_mpi_subsession(self, item, mpi_ranks, threads, timeout, timeout_in):
+        # pylint: disable=too-many-arguments, too-many-locals
         cmd = self._mpi_configuration.extend_command_for_parallel_execution(
             cmd=assemble_sub_pytest_cmd(self._session.config.option, item.nodeid),
             ranks=mpi_ranks,
@@ -249,7 +310,6 @@ class MPIPlugin:
         if self._verbose_mpi_info:
             print(f"dispatching command: {cmd}")
 
-        reports = []
         mpi_proc_result = None
         timeout_expired = False
 
@@ -274,33 +334,62 @@ class MPIPlugin:
             except subprocess.TimeoutExpired:
                 timeout_expired = True
 
-            found_all_reports = True
+            reports_by_rank = {}
+            missing_reports = False
             for i in range(mpi_ranks):
                 try:
                     with open(os.path.join(tmpdir, f"{i}"), mode="rb") as f:
-                        reports += pickle.load(f)
+                        reports_by_rank[i] = pickle.load(f)
                 except FileNotFoundError:
-                    found_all_reports = False
+                    missing_reports = True
 
-            if not found_all_reports:
-                if timeout_expired:
-                    msg = (
-                        f"Timeout occurred for {item.nodeid}: exceeded run time limit of "
-                        f"{timeout_in[1]}{timeout_in[0]}."
-                    )
-                else:
-                    msg = "At least one MPI process has exited prematurely."
-                rep = TestReport(
-                    nodeid=item.nodeid, location=item.location, outcome="failed", when="call", keywords={}, longrepr=msg
-                )
-                if mpi_proc_result is not None:
-                    if mpi_proc_result.stdout is not None:
-                        rep.sections.append(("Captured stdout", mpi_proc_result.stdout))
-                    if mpi_proc_result.stderr is not None:
-                        rep.sections.append(("Captured stderr", mpi_proc_result.stderr))
-                reports.append(rep)
+        failure_reason = None
+        sections = []
+        if missing_reports:
+            failure_reason = "timeout" if timeout_expired else "premature"
+            if mpi_proc_result is not None:
+                if mpi_proc_result.stdout is not None:
+                    sections.append(("Captured stdout", mpi_proc_result.stdout))
+                if mpi_proc_result.stderr is not None:
+                    sections.append(("Captured stderr", mpi_proc_result.stderr))
 
-        return reports
+        return _SubsessionReports(
+            reports_by_rank=reports_by_rank,
+            failure_reason=failure_reason,
+            timeout_in=timeout_in,
+            sections=sections,
+        )
+
+    @staticmethod
+    def _synthesized_mpi_failure(item, subsession_reports):
+        if subsession_reports.failure_reason == "timeout":
+            msg = (
+                f"Timeout occurred for {item.nodeid}: exceeded run time limit of "
+                f"{subsession_reports.timeout_in[1]}{subsession_reports.timeout_in[0]}."
+            )
+        else:
+            msg = "At least one MPI process has exited prematurely."
+        rep = TestReport(
+            nodeid=item.nodeid, location=item.location, outcome="failed", when="call", keywords={}, longrepr=msg
+        )
+        if subsession_reports.sections and not subsession_reports.sections_consumed:
+            rep.sections.extend(subsession_reports.sections)
+            subsession_reports.sections_consumed = True
+        return rep
+
+    @staticmethod
+    def _mpi_group_key(item):
+        """Key identifying all rank tests of one MPI test run of a test function."""
+        params = dict(item.callspec.params) if hasattr(item, "callspec") else {}
+        params.pop("mpi_rank", None)
+        base_nodeid, _, _ = item.nodeid.partition("[")
+        return (base_nodeid, tuple(sorted(params.items(), key=lambda param: param[0])))
+
+    def _mpi_sibling_follows(self, item, nextitem):
+        """Whether the next item is another rank test of the same MPI test run."""
+        if nextitem is None or not nextitem.get_closest_marker("mpi"):
+            return False
+        return self._mpi_group_key(nextitem) == self._mpi_group_key(item)
 
     def pytest_terminal_summary(self, terminalreporter, exitstatus, config):  # pylint: disable=unused-argument
         """Hook for printing MPI info at the end of the run"""

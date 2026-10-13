@@ -1,8 +1,8 @@
 Changelog
 =========
 
-Unreleased
-----------
+Version 0.4.1
+-------------
 
 - Fixed ``previous item was not torn down properly`` errors after a
   module that contains a non-MPI test and ends with an MPI test. The

@@ -6,7 +6,7 @@ import enum
 @enum.unique
 class MPIMarkerEnum(str, enum.Enum):
     """
-    Enum containing all the markers used by pytest-mpi
+    Enum containing all the markers used by pytest-isolate-mpi
 
     FIXME: Once we are on Python 3.11, use StrEnum
     """

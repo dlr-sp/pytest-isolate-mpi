@@ -346,7 +346,7 @@ class MPIPlugin:
 
 def pytest_configure(config):
     """
-    Add pytest-mpi to pytest (see pytest docs for more info)
+    Add pytest-isolate-mpi to pytest (see pytest docs for more info)
     """
     config.addinivalue_line("markers", f"{MPIMarkerEnum.MPI.value}: Tests that require being run with MPI/mpirun")
     config.pluginmanager.register(MPIPlugin())
@@ -354,7 +354,7 @@ def pytest_configure(config):
 
 def pytest_addoption(parser):
     """
-    Add pytest-mpi options to pytest cli and ini file
+    Add pytest-isolate-mpi options to pytest cli and ini file
     """
     group = parser.getgroup("mpi", description="support for MPI-enabled code")
     group.addoption(

@@ -19,9 +19,10 @@ launch an MPI job with the requested amount of processes. In this MPI
 job, a ``pytest`` session runs this particular test. Each MPI process
 produces its own test report which is collected in the main process. To
 distinguish the reports from each MPI process, ``pytest-isolate-mpi``
-extends the node IDs of the test reports to contain the source rank
-from which the report originates. For instance, the test above would
-result in (with ``--verbose`` passed to ``pytest``):
+parametrizes MPI tests over the fixture ``mpi_rank``: every test gets
+one collected test per MPI process, which is reported under a node ID
+ending in ``rank<N>``. For instance, the test above would result in
+(with ``--verbose`` passed to ``pytest``):
 
 .. literalinclude:: ../examples/test_basic.py.out
     :linenos:
@@ -79,13 +80,14 @@ in turn.
 .. literalinclude:: ../examples/test_number_of_processes_matches_ranks.py
     :linenos:
 
-Internally, ``pytest-isolate-mpi`` `parametrizes`_ the ``mpi_ranks`` fixture,
-which stores the number of MPI ranks for each test run.  ``mpi_ranks`` is an
-`autouse`_ fixture which does not have to be requested explicitly as shown in
-the example.
+Internally, ``pytest-isolate-mpi`` `parametrizes`_ the fixtures
+``mpi_ranks`` and ``mpi_rank``, where ``mpi_ranks`` stores the number of
+MPI ranks and ``mpi_rank`` the rank of the process executing the test.
+Both are `autouse`_ fixtures which do not have to be requested
+explicitly as shown in the example. All rank tests of one test run are
+executed jointly in a single MPI job.
 
-When executed, for each parametrization a matching number of test reports is
-produced:
+When executed, exactly one test report is produced per parametrization:
 
 .. literalinclude:: ../examples/test_number_of_processes_matches_ranks.py.out
     :language: output
@@ -133,6 +135,13 @@ mpi_ranks
     used.
 
     See also :func:`~pytest_isolate_mpi.fixtures.mpi_ranks_fixture`.
+
+mpi_rank
+    The rank of the MPI process executing the test. MPI tests are
+    parametrized over this fixture such that each MPI process gets its
+    own reported test. Automatically used.
+
+    See also :func:`~pytest_isolate_mpi.fixtures.mpi_rank_fixture`.
 
 mpi_tmpdir
     Wraps Pytest's built-in ``tmpdir`` fixture such that it can be used
@@ -241,10 +250,10 @@ Reports for Crashed MPI Tests
 If a Pytest session running a single MPI-parallel test exits
 prematurely, it may fail to write its test report to its predetermined
 location. In this case, ``pytest-isolate-mpi`` can no longer provide a
-per-process test report for the failed ranks. Instead,
-``pytest-isolate-mpi`` will produce the output of ``mpirun``
-which will contain the full output of all parallel-run Pytest sessions
-and ``mpirun`` itself:
+real per-process test report for the failed ranks. Instead, the rank
+tests of the affected ranks are reported as failed with the output of
+``mpirun`` attached, which will contain the full output of all
+parallel-run Pytest sessions and ``mpirun`` itself:
 
 .. literalinclude:: ../examples/test_one_aborting_rank.py.out
     :language: output
@@ -283,12 +292,4 @@ default ``function`` scope is limited for MPI-parallel tests:
 
 For non-MPI tests, fixture scopes behave as usual even if
 ``pytest-isolate-mpi`` is employed in the project.
-
-
-Percentage of Completed Tests During Pytest Run
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-As ``pytest-isolate-mpi`` produces one test report per MPI process
-while not increasing the test count, the reported percentages for test
-run completion are incorrect.
 

@@ -34,5 +34,8 @@ jobs:
       run: |
         make lint
     - name: Run test suite
+      # Export the oversubscription toggle under both the OpenMPI 4.x
+      # (OMPI_MCA_) and the OpenMPI 5.x/prte (PRTE_MCA_) variable names;
+      # each version ignores the variable it does not know.
       run: |
-        make OMPI_MCA_rmaps_base_oversubscribe=true test    
+        make OMPI_MCA_rmaps_base_oversubscribe=true "PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe" test    

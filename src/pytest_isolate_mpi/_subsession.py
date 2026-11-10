@@ -33,7 +33,7 @@ def _add_general_options(cmd, option):
 
 def _add_reporting_options(cmd, option):
     cmd += ["--no-header", "--no-summary"]
-    if option.verbose:
+    if option.verbose > 0:
         cmd += [f"-{option.verbose * 'v'}"]
     if option.disable_warnings:
         cmd += ["--disable-warnings"]

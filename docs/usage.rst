@@ -77,19 +77,19 @@ By passing a list to the ``ranks`` argument of the ``mpi`` mark, a
 test is run multiple times with each requested number of MPI processes
 in turn.
 
-.. literalinclude:: ../examples/test_number_of_processes_matches_ranks.py
+.. literalinclude:: ../examples/test_autouse_fixtures.py
     :linenos:
 
 Internally, ``pytest-isolate-mpi`` `parametrizes`_ the fixtures
 ``mpi_ranks`` and ``mpi_rank``, where ``mpi_ranks`` stores the number of
 MPI ranks and ``mpi_rank`` the rank of the process executing the test.
 Both are `autouse`_ fixtures which do not have to be requested
-explicitly as shown in the example. All rank tests of one test run are
-executed jointly in a single MPI job.
+explicitly. Here in the example, we request them explicitly to illustrate
+their behavior.
 
 When executed, exactly one test report is produced per parametrization:
 
-.. literalinclude:: ../examples/test_number_of_processes_matches_ranks.py.out
+.. literalinclude:: ../examples/test_autouse_fixtures.py.out
     :language: output
 
 .. _parametrizes: https://docs.pytest.org/en/stable/how-to/parametrize.html#pytest-mark-parametrize-parametrizing-test-functions

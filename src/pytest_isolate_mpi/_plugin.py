@@ -155,15 +155,7 @@ class MPIPlugin:
                     )
             ranks = mark.kwargs.get("ranks")
             if ranks is not None:
-                if isinstance(ranks, collections.abc.Sequence):
-                    list_of_ranks = ranks
-                elif isinstance(ranks, int):
-                    list_of_ranks = [ranks]
-                else:
-                    list_of_ranks = []
-                    pytest.exit(
-                        "Range of MPI ranks must be an integer or an integer sequence", pytest.ExitCode.USAGE_ERROR
-                    )
+                list_of_ranks = self._parse_mpi_marker_ranks_arg(ranks)
 
                 for rank in list_of_ranks:
                     if not isinstance(rank, int) or rank <= 0:
@@ -187,6 +179,19 @@ class MPIPlugin:
                         ids=[f"{ranks}-rank{rank}" for ranks, rank in rank_combinations],
                         indirect=["mpi_rank"],
                     )
+                else:
+                    pytest.exit("MPI test without mpi_ranks and/or mpi_rank fixture.", pytest.ExitCode.INTERNAL_ERROR)
+
+    @staticmethod
+    def _parse_mpi_marker_ranks_arg(ranks: int | collections.abc.Sequence[int]) -> list[int]:
+        if isinstance(ranks, collections.abc.Sequence):
+            list_of_ranks = ranks
+        elif isinstance(ranks, int):
+            list_of_ranks = [ranks]
+        else:
+            list_of_ranks = []
+            pytest.exit("Range of MPI ranks must be an integer or an integer sequence", pytest.ExitCode.USAGE_ERROR)
+        return list_of_ranks
 
     def pytest_runtest_setup(self, item):
         """
@@ -209,6 +214,7 @@ class MPIPlugin:
         if self._cache_tempdir is not None:
             self._cache_tempdir.cleanup()
         self._session = None
+        # Release any reports that were not consumed by their rank tests.
         self._subsession_reports = {}
 
     @pytest.hookimpl(tryfirst=True)

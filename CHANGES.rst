@@ -16,9 +16,10 @@ Version 0.5
   ``test_mpi[2-rank0]``. (`#25`_)
 
 - Fixed dispatching of MPI test subsessions when ``pytest`` is run with
-  ``-q``.
+  ``-q``. (`#54`_)
 
 .. _#25: https://github.com/dlr-sp/pytest-isolate-mpi/issues/25
+.. _#54: https://github.com/dlr-sp/pytest-isolate-mpi/issues/54
 
 Version 0.4.1
 -------------
